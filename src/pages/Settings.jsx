@@ -43,30 +43,26 @@ export default function Settings() {
     if (!token || !userId) return
     const acceptInvite = async () => {
       try {
-        const { data: p, error: findError } = await supabase
-          .from('partnerships')
-          .select('*')
-          .eq('invite_token', token)
-          .eq('status', 'pending')
-          .maybeSingle()
-        if (findError || !p) { toast.error('Convite inválido ou expirado.'); return }
-        if (p.parent_1_id === userId) { toast.info('Você já é o criador desta parceria.'); return }
-        const { error } = await supabase.from('partnerships').update({
-          parent_2_id: userId,
-          parent_2_email: userEmail,
-          parent_2_name: userDisplayName,
-          status: 'active',
-        }).eq('id', p.id)
-        if (error) throw error
+        const { error: acceptError } = await supabase.rpc('accept_partnership_invite', {
+          p_invite_token: token,
+          p_parent_email: userEmail,
+          p_parent_name: userDisplayName,
+        })
+        if (acceptError) throw acceptError
         toast.success('Parceria aceita com sucesso! Bem-vindo(a)!')
-        qc.invalidateQueries(['partnership'])
+        qc.invalidateQueries({ queryKey: ['partnership'] })
+        qc.invalidateQueries({ queryKey: ['children'] })
         setSearchParams({})
+        return
       } catch (err) {
-        toast.error('Erro ao aceitar convite: ' + err.message)
+        const message = err.message === 'invalid_or_expired_invite'
+          ? 'Convite invalido, expirado ou ja aceito.'
+          : err.message
+        toast.error('Erro ao aceitar convite: ' + message)
       }
     }
     acceptInvite()
-  }, [userId])
+  }, [searchParams, setSearchParams, userDisplayName, userEmail, userId, qc])
 
   const handleInvite = async (e) => {
     e.preventDefault()

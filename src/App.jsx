@@ -1,4 +1,4 @@
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { HashRouter, Routes, Route, Navigate, useLocation, useSearchParams } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'sonner'
 import { AuthProvider, useAuth } from '@/context/AuthContext'
@@ -30,6 +30,7 @@ const queryClient = new QueryClient({
 // Protected route wrapper
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading } = useAuth()
+  const location = useLocation()
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -40,8 +41,17 @@ function ProtectedRoute({ children }) {
       </div>
     )
   }
-  if (!isAuthenticated) return <Navigate to="/auth" replace />
+  if (!isAuthenticated) {
+    const redirect = `${location.pathname}${location.search}`
+    return <Navigate to={`/auth?redirect=${encodeURIComponent(redirect)}`} replace />
+  }
   return children
+}
+
+function AuthRedirect() {
+  const [searchParams] = useSearchParams()
+  const redirect = searchParams.get('redirect') || '/home'
+  return <Navigate to={redirect} replace />
 }
 
 // Layout wrapper for authenticated pages
@@ -68,7 +78,7 @@ function AppRoutes() {
     <Routes>
       {/* Public */}
       <Route path="/" element={<BetaWelcome />} />
-      <Route path="/auth" element={isAuthenticated ? <Navigate to="/home" replace /> : <AuthPage />} />
+      <Route path="/auth" element={isAuthenticated ? <AuthRedirect /> : <AuthPage />} />
 
       {/* Protected with layout */}
       <Route path="/home" element={<AppLayout><Home /></AppLayout>} />

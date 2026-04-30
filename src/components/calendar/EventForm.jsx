@@ -52,6 +52,7 @@ export default function EventForm({ open, onClose, onSaved, event, childrenList 
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (!form.child_id) { toast.error('Selecione a crianca'); return }
     if (!form.title.trim()) { toast.error('Título é obrigatório'); return }
     if (!form.start_date) { toast.error('Data de início é obrigatória'); return }
     setLoading(true)
@@ -60,7 +61,7 @@ export default function EventForm({ open, onClose, onSaved, event, childrenList 
         ...form,
         start_date: new Date(form.start_date).toISOString(),
         end_date: form.end_date ? new Date(form.end_date).toISOString() : null,
-        child_id: form.child_id || null,
+        child_id: form.child_id,
       }
       if (event?.id) {
         const { error } = await supabase.from('calendar_events').update(payload).eq('id', event.id)
@@ -95,9 +96,8 @@ export default function EventForm({ open, onClose, onSaved, event, childrenList 
             <div className="space-y-1.5">
               <Label>Criança</Label>
               <Select value={form.child_id} onValueChange={setDirect('child_id')}>
-                <SelectTrigger><SelectValue placeholder="Todos os filhos" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos os filhos</SelectItem>
                   {childrenList.map(c => <SelectItem key={c.id} value={c.id}>{c.full_name}</SelectItem>)}
                 </SelectContent>
               </Select>

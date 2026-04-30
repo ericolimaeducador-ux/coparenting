@@ -53,13 +53,14 @@ export default function GiftForm({ open, onClose, onSaved, gift, childrenList = 
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (!form.child_id) { toast.error('Selecione a crianca'); return }
     if (!form.title.trim()) { toast.error('Nome é obrigatório'); return }
     setLoading(true)
     try {
       const payload = {
         ...form,
         price_estimate: form.price_estimate ? parseFloat(form.price_estimate) : null,
-        child_id: form.child_id || null,
+        child_id: form.child_id,
         suggested_by: suggestedBy,
         status: gift?.status || 'suggested',
       }

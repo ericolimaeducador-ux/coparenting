@@ -61,13 +61,14 @@ export default function ExpenseForm({ open, onClose, onSaved, expense, childrenL
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (!form.child_id) { toast.error('Selecione a crianca'); return }
     if (!form.amount || isNaN(form.amount)) { toast.error('Valor inválido'); return }
     setLoading(true)
     try {
       const payload = {
         ...form,
         amount: parseFloat(form.amount),
-        child_id: form.child_id || null,
+        child_id: form.child_id,
       }
       if (expense?.id) {
         const { error } = await supabase.from('expenses').update(payload).eq('id', expense.id)
@@ -109,9 +110,8 @@ export default function ExpenseForm({ open, onClose, onSaved, expense, childrenL
             <div className="space-y-1.5">
               <Label>Criança</Label>
               <Select value={form.child_id} onValueChange={setDirect('child_id')}>
-                <SelectTrigger><SelectValue placeholder="Todos os filhos" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos os filhos</SelectItem>
                   {childrenList.map(c => <SelectItem key={c.id} value={c.id}>{c.full_name}</SelectItem>)}
                 </SelectContent>
               </Select>

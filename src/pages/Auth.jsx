@@ -50,7 +50,7 @@ export default function AuthPage() {
   const handleGoogle = async () => {
     setLoading(true)
     try {
-      const { error } = await signInWithGoogle()
+      const { error } = await signInWithGoogle(redirect)
       if (error) throw error
     } catch (err) {
       toast.error(err.message || 'Erro ao entrar com Google.')
