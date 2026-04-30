@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom'
 import {
-  Heart, Calendar, DollarSign, MessageCircle, Gift,
+  Calendar, DollarSign, MessageCircle, Gift,
   Syringe, FileText, Shield, Star, ArrowRight, CheckCircle
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import AppLogo from '@/components/shared/AppLogo'
 
 const features = [
   { icon: Calendar, title: 'Calendário Compartilhado', desc: 'Eventos, consultas, custódia e atividades em um único lugar.', color: 'bg-blue-50 text-blue-600' },
@@ -41,12 +42,7 @@ export default function BetaWelcome() {
       {/* Header */}
       <header className="sticky top-0 z-40 bg-white/80 backdrop-blur border-b border-slate-100">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary-600 flex items-center justify-center">
-              <Heart className="h-4 w-4 fill-white text-white" />
-            </div>
-            <span className="font-display font-bold text-slate-900 text-lg">CoParent</span>
-          </div>
+          <AppLogo markClassName="h-8 w-8" wordmarkClassName="text-lg" />
           <div className="flex items-center gap-3">
             <Link to="/auth">
               <Button variant="ghost" size="sm">Entrar</Button>
@@ -180,8 +176,7 @@ export default function BetaWelcome() {
       <footer className="border-t border-slate-100 py-8">
         <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
-            <Heart className="h-4 w-4 text-primary-500 fill-primary-500" />
-            <span>CoParent — Juntos pelos filhos</span>
+            <AppLogo markClassName="h-5 w-5" wordmarkClassName="text-sm" />
           </div>
           <p>© {new Date().getFullYear()} · Privado e seguro com Supabase</p>
         </div>

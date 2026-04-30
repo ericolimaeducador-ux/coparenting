@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Heart, Eye, EyeOff, Mail, Lock, User, ArrowRight } from 'lucide-react'
+import { Eye, EyeOff, Mail, Lock, User, ArrowRight } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/misc'
+import AppLogo from '@/components/shared/AppLogo'
 import { toast } from 'sonner'
 
 export default function AuthPage() {
@@ -78,12 +79,7 @@ export default function AuthPage() {
           ))}
         </div>
         <div className="relative z-10">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur">
-              <Heart className="h-5 w-5 fill-white text-white" />
-            </div>
-            <span className="font-display text-xl font-bold">CoParent</span>
-          </div>
+          <AppLogo markClassName="h-10 w-10" wordmarkClassName="text-white text-xl" />
         </div>
         <div className="relative z-10 space-y-6">
           <h1 className="font-display text-4xl font-bold leading-tight">
@@ -115,12 +111,7 @@ export default function AuthPage() {
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-md animate-fade-in">
           {/* Mobile logo */}
-          <div className="flex items-center gap-2 mb-8 lg:hidden">
-            <div className="w-8 h-8 rounded-lg bg-primary-600 flex items-center justify-center">
-              <Heart className="h-4 w-4 fill-white text-white" />
-            </div>
-            <span className="font-display font-bold text-slate-900">CoParent</span>
-          </div>
+          <AppLogo className="mb-8 lg:hidden" markClassName="h-8 w-8" />
 
           <div className="bg-white rounded-2xl border border-slate-100 shadow-lg p-8">
             <div className="mb-6">

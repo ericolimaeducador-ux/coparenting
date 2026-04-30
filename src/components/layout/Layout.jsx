@@ -2,13 +2,14 @@ import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
   Home, Calendar, DollarSign, MessageCircle, Gift,
-  Settings, LogOut, Menu, X, Heart, Baby
+  Settings, LogOut, Menu, X
 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { Avatar } from '@/components/ui/misc'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import AppLogo from '@/components/shared/AppLogo'
 
 const navItems = [
   { to: '/home', icon: Home, label: 'Início' },
@@ -92,12 +93,7 @@ export default function Layout({ children }) {
       <div className="flex flex-col flex-1 overflow-hidden">
         {/* Mobile header */}
         <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-slate-100 shadow-sm">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-primary-600 flex items-center justify-center">
-              <Heart className="h-3.5 w-3.5 text-white fill-white" />
-            </div>
-            <span className="font-display font-semibold text-slate-900">CoParent</span>
-          </div>
+          <AppLogo markClassName="h-7 w-7" />
           <Button
             variant="ghost"
             size="icon"
@@ -122,15 +118,7 @@ function SidebarContent({ userDisplayName, userEmail, userAvatar, onSignOut, onN
   return (
     <div className="flex flex-col h-full p-4">
       {/* Logo */}
-      <div className="flex items-center gap-3 px-2 py-3 mb-6">
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center shadow-md shadow-primary-200">
-          <Heart className="h-4.5 w-4.5 text-white fill-white" />
-        </div>
-        <div>
-          <p className="font-display font-bold text-slate-900 leading-none">CoParent</p>
-          <p className="text-xs text-muted-foreground mt-0.5">Juntos pelos filhos</p>
-        </div>
-      </div>
+      <AppLogo className="px-2 py-3 mb-6" tagline />
 
       {/* User info */}
       <div className="flex items-center gap-3 px-3 py-3 mb-4 rounded-xl bg-slate-50 border border-slate-100">
