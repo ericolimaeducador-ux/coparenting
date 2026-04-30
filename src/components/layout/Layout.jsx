@@ -93,7 +93,7 @@ export default function Layout({ children }) {
       <div className="flex flex-col flex-1 overflow-hidden">
         {/* Mobile header */}
         <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-slate-100 shadow-sm">
-          <AppLogo markClassName="h-7 w-7" />
+          <AppLogo markClassName="h-8 w-11" wordmarkClassName="text-sm tracking-[0.06em]" />
           <Button
             variant="ghost"
             size="icon"
@@ -118,7 +118,7 @@ function SidebarContent({ userDisplayName, userEmail, userAvatar, onSignOut, onN
   return (
     <div className="flex flex-col h-full p-4">
       {/* Logo */}
-      <AppLogo className="px-2 py-3 mb-6" tagline />
+      <AppLogo className="px-2 py-3 mb-6" markClassName="h-11 w-16" wordmarkClassName="text-base" tagline />
 
       {/* User info */}
       <div className="flex items-center gap-3 px-3 py-3 mb-4 rounded-xl bg-slate-50 border border-slate-100">

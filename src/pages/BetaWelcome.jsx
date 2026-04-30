@@ -42,7 +42,7 @@ export default function BetaWelcome() {
       {/* Header */}
       <header className="sticky top-0 z-40 bg-white/80 backdrop-blur border-b border-slate-100">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <AppLogo markClassName="h-8 w-8" wordmarkClassName="text-lg" />
+          <AppLogo markClassName="h-10 w-14" wordmarkClassName="text-lg" />
           <div className="flex items-center gap-3">
             <Link to="/auth">
               <Button variant="ghost" size="sm">Entrar</Button>
@@ -176,7 +176,7 @@ export default function BetaWelcome() {
       <footer className="border-t border-slate-100 py-8">
         <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
-            <AppLogo markClassName="h-5 w-5" wordmarkClassName="text-sm" />
+            <AppLogo markClassName="h-7 w-10" wordmarkClassName="text-sm" />
           </div>
           <p>© {new Date().getFullYear()} · Privado e seguro com Supabase</p>
         </div>

@@ -79,7 +79,7 @@ export default function AuthPage() {
           ))}
         </div>
         <div className="relative z-10">
-          <AppLogo markClassName="h-10 w-10" wordmarkClassName="text-white text-xl" />
+          <AppLogo markClassName="h-12 w-16" wordmarkClassName="text-white text-xl" />
         </div>
         <div className="relative z-10 space-y-6">
           <h1 className="font-display text-4xl font-bold leading-tight">
@@ -111,7 +111,7 @@ export default function AuthPage() {
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-md animate-fade-in">
           {/* Mobile logo */}
-          <AppLogo className="mb-8 lg:hidden" markClassName="h-8 w-8" />
+          <AppLogo className="mb-8 lg:hidden" markClassName="h-10 w-14" wordmarkClassName="text-base" />
 
           <div className="bg-white rounded-2xl border border-slate-100 shadow-lg p-8">
             <div className="mb-6">
