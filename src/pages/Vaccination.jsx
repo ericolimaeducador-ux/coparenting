@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, CheckCircle, Clock, AlertTriangle, XCircle, Syringe, Trash2 } from 'lucide-react'
+import { Plus, CheckCircle, Clock, AlertTriangle, XCircle, Syringe, Trash2, Download } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -282,6 +282,11 @@ export default function Vaccination() {
                     {v.applied_location && <p className="text-xs text-muted-foreground">Local: {v.applied_location}</p>}
                     {v.lot_number && <p className="text-xs text-muted-foreground">Lote: {v.lot_number}</p>}
                     {v.notes && <p className="text-xs text-slate-600 mt-1">{v.notes}</p>}
+                    {v.attachment_url && (
+                      <a href={v.attachment_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-primary-600 hover:underline mt-1">
+                        <Download className="h-3 w-3" /> Ver anexo
+                      </a>
+                    )}
                   </div>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>

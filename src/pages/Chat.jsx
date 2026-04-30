@@ -50,12 +50,12 @@ export default function Chat() {
         .order('created_at', { ascending: true })
         .limit(200)
       if (error) throw error
-      // Mark unread as read
-      await supabase.from('chat_messages').update({ read: true })
-        .neq('sender_id', userId).eq('read', false)
+      await supabase.rpc('mark_partnership_messages_read', {
+        p_partnership_id: partnership.id,
+      })
       return data || []
     },
-    enabled: parentIds.length > 0,
+    enabled: !!partnership?.id && parentIds.length > 0,
     refetchInterval: 3000,
   })
 

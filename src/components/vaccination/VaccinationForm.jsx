@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
+import { Upload } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/context/AuthContext'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,13 +17,16 @@ const empty = {
   applied_date: new Date().toISOString().split('T')[0],
   applied_location: '',
   lot_number: '',
+  attachment_url: '',
   notes: '',
 }
 
 export default function VaccinationForm({ open, onClose, onSaved, childId, vaccine, catalog = [] }) {
+  const { userId } = useAuth()
   const [form, setForm] = useState(empty)
   const [manual, setManual] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [uploading, setUploading] = useState(false)
 
   useEffect(() => {
     if (vaccine) {
@@ -52,6 +57,25 @@ export default function VaccinationForm({ open, onClose, onSaved, childId, vacci
     }
   }
 
+  const handleAttachmentUpload = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    setUploading(true)
+    try {
+      const ext = file.name.split('.').pop()
+      const path = `vaccinations/${userId}/${childId}/${Date.now()}.${ext}`
+      const { error } = await supabase.storage.from('uploads').upload(path, file, { upsert: true })
+      if (error) throw error
+      const { data: { publicUrl } } = supabase.storage.from('uploads').getPublicUrl(path)
+      setForm(f => ({ ...f, attachment_url: publicUrl }))
+      toast.success('Anexo enviado.')
+    } catch (err) {
+      toast.error('Erro ao enviar anexo: ' + err.message)
+    } finally {
+      setUploading(false)
+    }
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!form.vaccine_name.trim()) { toast.error('Nome da vacina é obrigatório'); return }
@@ -67,6 +91,7 @@ export default function VaccinationForm({ open, onClose, onSaved, childId, vacci
         applied_date: form.applied_date,
         applied_location: form.applied_location || null,
         lot_number: form.lot_number || null,
+        attachment_url: form.attachment_url || null,
         notes: form.notes || null,
       })
       if (error) throw error
@@ -135,6 +160,21 @@ export default function VaccinationForm({ open, onClose, onSaved, childId, vacci
           <div className="space-y-1.5">
             <Label>Observações</Label>
             <Textarea value={form.notes} onChange={set('notes')} rows={2} placeholder="Reações, observações..." />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Anexo da vacina</Label>
+            {form.attachment_url && (
+              <a href={form.attachment_url} target="_blank" rel="noopener noreferrer" className="block text-xs text-primary-600 hover:underline">
+                Ver anexo enviado
+              </a>
+            )}
+            <Label className="cursor-pointer">
+              <input type="file" accept="image/*,.pdf" className="hidden" onChange={handleAttachmentUpload} />
+              <Button type="button" variant="outline" size="sm" className="gap-2" disabled={uploading} asChild>
+                <span><Upload className="h-3.5 w-3.5" />{uploading ? 'Enviando...' : 'Enviar anexo'}</span>
+              </Button>
+            </Label>
           </div>
 
           <DialogFooter>

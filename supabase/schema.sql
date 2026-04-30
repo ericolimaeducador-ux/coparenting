@@ -200,6 +200,7 @@ CREATE TABLE IF NOT EXISTS child_vaccinations (
   applied_date DATE NOT NULL,
   applied_location TEXT,
   lot_number TEXT,
+  attachment_url TEXT,
   notes TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -297,9 +298,47 @@ CREATE POLICY "chat_messages_select" ON chat_messages FOR SELECT USING (
     SELECT parent_2_id FROM partnerships WHERE parent_1_id = auth.uid() OR parent_2_id = auth.uid()
   )
 );
-CREATE POLICY "chat_messages_insert" ON chat_messages FOR INSERT WITH CHECK (sender_id = auth.uid());
-CREATE POLICY "chat_messages_update" ON chat_messages FOR UPDATE USING (sender_id = auth.uid() OR TRUE); -- allow marking as read
+CREATE POLICY "chat_messages_insert" ON chat_messages FOR INSERT WITH CHECK (
+  sender_id = auth.uid()
+  AND EXISTS (
+    SELECT 1 FROM partnerships
+    WHERE status = 'active'
+      AND (parent_1_id = auth.uid() OR parent_2_id = auth.uid())
+  )
+);
 CREATE POLICY "chat_messages_delete" ON chat_messages FOR DELETE USING (sender_id = auth.uid());
+
+CREATE OR REPLACE FUNCTION mark_partnership_messages_read(p_partnership_id UUID)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_parent_1 UUID;
+  v_parent_2 UUID;
+BEGIN
+  SELECT parent_1_id, parent_2_id
+  INTO v_parent_1, v_parent_2
+  FROM partnerships
+  WHERE id = p_partnership_id
+    AND status = 'active'
+    AND (parent_1_id = auth.uid() OR parent_2_id = auth.uid());
+
+  IF v_parent_1 IS NULL THEN
+    RAISE EXCEPTION 'partnership_not_found';
+  END IF;
+
+  UPDATE chat_messages
+  SET read = TRUE
+  WHERE read = FALSE
+    AND sender_id <> auth.uid()
+    AND sender_id IN (v_parent_1, v_parent_2);
+END;
+$$;
+
+REVOKE ALL ON FUNCTION mark_partnership_messages_read(UUID) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION mark_partnership_messages_read(UUID) TO authenticated;
 
 -- GIFT SUGGESTIONS: via child access
 CREATE POLICY "gifts_access" ON gift_suggestions FOR ALL USING (
