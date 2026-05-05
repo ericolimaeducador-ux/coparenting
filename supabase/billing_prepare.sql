@@ -65,4 +65,38 @@ SELECT id FROM partnerships
 WHERE status = 'active'
 ON CONFLICT (partnership_id) DO NOTHING;
 
+CREATE OR REPLACE FUNCTION get_partnership_storage_usage(p_partnership_id UUID)
+RETURNS BIGINT
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, storage
+AS $$
+DECLARE
+  v_parent_1 UUID;
+  v_parent_2 UUID;
+  v_total BIGINT;
+BEGIN
+  SELECT parent_1_id, parent_2_id
+  INTO v_parent_1, v_parent_2
+  FROM partnerships
+  WHERE id = p_partnership_id
+    AND (parent_1_id = auth.uid() OR parent_2_id = auth.uid());
+
+  IF v_parent_1 IS NULL THEN
+    RAISE EXCEPTION 'partnership_not_found';
+  END IF;
+
+  SELECT COALESCE(SUM(COALESCE((metadata->>'size')::BIGINT, 0)), 0)
+  INTO v_total
+  FROM storage.objects
+  WHERE bucket_id = 'uploads'
+    AND (storage.foldername(name))[2] IN (v_parent_1::TEXT, v_parent_2::TEXT);
+
+  RETURN v_total;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION get_partnership_storage_usage(UUID) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION get_partnership_storage_usage(UUID) TO authenticated;
+
 NOTIFY pgrst, 'reload schema';

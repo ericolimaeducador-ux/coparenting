@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Upload } from 'lucide-react'
+import { Lock } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import { useAuth } from '@/context/AuthContext'
-import { createStorageReference, safeFileExtension, validateUploadFile } from '@/lib/uploads'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -29,10 +27,8 @@ const empty = {
 }
 
 export default function ExpenseForm({ open, onClose, onSaved, expense, childrenList = [], parents = [] }) {
-  const { userId } = useAuth()
   const [form, setForm] = useState(empty)
   const [loading, setLoading] = useState(false)
-  const [uploading, setUploading] = useState(false)
 
   useEffect(() => {
     if (expense) setForm({ ...empty, ...expense, amount: expense.amount?.toString() || '' })
@@ -41,26 +37,6 @@ export default function ExpenseForm({ open, onClose, onSaved, expense, childrenL
 
   const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target?.value ?? e }))
   const setDirect = (k) => (v) => setForm(f => ({ ...f, [k]: v }))
-
-  const handleReceiptUpload = async (e) => {
-    const file = e.target.files[0]
-    if (!file) return
-    const invalid = validateUploadFile(file, 'document')
-    if (invalid) { toast.error(invalid); return }
-    setUploading(true)
-    try {
-      const ext = safeFileExtension(file)
-      const path = `receipts/${userId}/${Date.now()}.${ext}`
-      const { error } = await supabase.storage.from('uploads').upload(path, file, { upsert: true })
-      if (error) throw error
-      setForm(f => ({ ...f, receipt_url: createStorageReference(path) }))
-      toast.success('Comprovante enviado!')
-    } catch (err) {
-      toast.error('Erro: ' + err.message)
-    } finally {
-      setUploading(false)
-    }
-  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -158,12 +134,10 @@ export default function ExpenseForm({ open, onClose, onSaved, expense, childrenL
                 Ver comprovante atual
               </SecureFileLink>
             )}
-            <Label className="cursor-pointer">
-              <input type="file" accept="image/*,.pdf" className="hidden" onChange={handleReceiptUpload} />
-              <Button type="button" variant="outline" size="sm" className="gap-2" disabled={uploading} asChild>
-                <span><Upload className="h-3.5 w-3.5" />{uploading ? 'Enviando...' : 'Enviar comprovante'}</span>
-              </Button>
-            </Label>
+            <div className="rounded-lg border border-slate-100 bg-slate-50 p-3 text-xs text-muted-foreground flex gap-2">
+              <Lock className="h-3.5 w-3.5 shrink-0" />
+              Upload de comprovantes fica desativado no beta cortesia.
+            </div>
           </div>
 
           <DialogFooter>

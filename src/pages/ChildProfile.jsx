@@ -1,20 +1,17 @@
 import { useState } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Edit, Syringe, Heart, School, FileText, Activity, Download, Phone, Mail, MapPin, Plus, Upload } from 'lucide-react'
+import { Edit, Syringe, Heart, School, FileText, Activity, Download, Phone, Mail, MapPin, Plus, Lock } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import { useAuth } from '@/context/AuthContext'
-import { createStorageReference, safeFileExtension, validateUploadFile } from '@/lib/uploads'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { Badge, Spinner, Avatar, Label } from '@/components/ui/misc'
+import { Badge, Spinner, Avatar } from '@/components/ui/misc'
 import { calculateAge, formatDate } from '@/lib/utils'
 import ChildForm from '@/components/children/ChildForm'
 import HealthRecordForm from '@/components/children/HealthRecordForm'
 import SchoolRecordForm from '@/components/children/SchoolRecordForm'
 import { SecureFileLink } from '@/components/shared/SecureFile'
-import { toast } from 'sonner'
 
 function InfoRow({ label, value }) {
   if (!value) return null
@@ -27,7 +24,6 @@ function InfoRow({ label, value }) {
 }
 
 export default function ChildProfile() {
-  const { userId } = useAuth()
   const [searchParams] = useSearchParams()
   const id = searchParams.get('id')
   const navigate = useNavigate()
@@ -35,7 +31,6 @@ export default function ChildProfile() {
   const [showEdit, setShowEdit] = useState(false)
   const [showHealthForm, setShowHealthForm] = useState(false)
   const [showSchoolForm, setShowSchoolForm] = useState(false)
-  const [uploadingDoc, setUploadingDoc] = useState(false)
 
   const { data: child, isLoading } = useQuery({
     queryKey: ['child', id],
@@ -46,30 +41,6 @@ export default function ChildProfile() {
     },
     enabled: !!id,
   })
-
-  const handleDocumentUpload = async (e) => {
-    const file = e.target.files[0]
-    if (!file || !child) return
-    const invalid = validateUploadFile(file, 'document')
-    if (invalid) { toast.error(invalid); return }
-    setUploadingDoc(true)
-    try {
-      const ext = safeFileExtension(file)
-      const path = `documents/${userId}/${id}/${Date.now()}.${ext}`
-      const { error } = await supabase.storage.from('uploads').upload(path, file, { upsert: true })
-      if (error) throw error
-      const documents = [...(child.documents || []), { name: file.name, url: createStorageReference(path), type: file.type || 'file' }]
-      const { error: updateError } = await supabase.from('children').update({ documents }).eq('id', id)
-      if (updateError) throw updateError
-      toast.success('Documento anexado.')
-      qc.invalidateQueries(['child', id])
-    } catch (err) {
-      toast.error('Erro ao anexar documento: ' + err.message)
-    } finally {
-      setUploadingDoc(false)
-      e.target.value = ''
-    }
-  }
 
   const { data: healthRecords = [] } = useQuery({
     queryKey: ['health-records', id],
@@ -303,13 +274,9 @@ export default function ChildProfile() {
         <TabsContent value="docs">
           <Card>
             <CardContent className="pt-5">
-              <div className="flex justify-end mb-3">
-                <Label className="cursor-pointer">
-                  <input type="file" accept="image/*,.pdf,.doc,.docx" className="hidden" onChange={handleDocumentUpload} />
-                  <Button type="button" variant="outline" size="sm" className="gap-1.5" disabled={uploadingDoc} asChild>
-                    <span><Upload className="h-3.5 w-3.5" />{uploadingDoc ? 'Enviando...' : 'Anexar documento'}</span>
-                  </Button>
-                </Label>
+              <div className="mb-3 flex gap-2 rounded-lg border border-slate-100 bg-slate-50 p-3 text-xs text-muted-foreground">
+                <Lock className="h-3.5 w-3.5 shrink-0" />
+                <span>Upload de documentos fica desativado no beta cortesia. Por enquanto, use apenas a foto da crianca em thumbnail.</span>
               </div>
               {(!child.documents || child.documents.length === 0) ? (
                 <p className="text-sm text-muted-foreground text-center py-4">Nenhum documento anexado.</p>

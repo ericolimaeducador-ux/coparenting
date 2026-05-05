@@ -8,29 +8,29 @@ import AppLogo from '@/components/shared/AppLogo'
 
 const features = [
   { icon: Calendar, title: 'Calendário Compartilhado', desc: 'Eventos, consultas, custódia e atividades em um único lugar.', color: 'bg-blue-50 text-blue-600' },
-  { icon: DollarSign, title: 'Controle de Finanças', desc: 'Registre despesas, comprovantes e visualize relatórios por categoria.', color: 'bg-green-50 text-green-600' },
+  { icon: DollarSign, title: 'Controle de Finanças', desc: 'Registre despesas e visualize relatórios por categoria.', color: 'bg-green-50 text-green-600' },
   { icon: MessageCircle, title: 'Chat Privado', desc: 'Comunicação direta com o co-responsável, centrada nos filhos.', color: 'bg-purple-50 text-purple-600' },
   { icon: Syringe, title: 'Caderneta de Vacinas', desc: 'Calendário vacinal completo com alertas de doses pendentes.', color: 'bg-orange-50 text-orange-600' },
   { icon: Gift, title: 'Lista de Presentes', desc: 'Sugira, aprove e acompanhe presentes para datas especiais.', color: 'bg-pink-50 text-pink-600' },
-  { icon: FileText, title: 'Documentos e Laudos', desc: 'Armazene exames, laudos e documentos escolares com segurança.', color: 'bg-teal-50 text-teal-600' },
+  { icon: FileText, title: 'Dados Organizados', desc: 'Centralize informações importantes dos filhos com acesso restrito ao par.', color: 'bg-teal-50 text-teal-600' },
 ]
 
 const plans = [
   {
-    name: 'Gratuito',
+    name: 'Beta cortesia',
     price: 'R$ 0',
     period: '/mês',
-    desc: 'Para começar',
-    features: ['2 responsáveis', '2 crianças', 'Chat básico', 'Calendário', 'Finanças'],
+    desc: 'Sem cobrança agora',
+    features: ['2 responsáveis', '2 crianças', 'Fotos em thumbnail', 'Anexos desativados no beta', 'Calendário, chat e finanças'],
     cta: 'Começar grátis',
     highlight: false,
   },
   {
-    name: 'Premium',
-    price: 'Em breve',
-    period: '',
-    desc: 'Para famílias ativas',
-    features: ['Filhos ilimitados', 'Upload ilimitado', 'Relatórios avançados', 'Notificações por e-mail', 'Suporte prioritário'],
+    name: 'Família Compartilhada',
+    price: 'R$ 30',
+    period: '/mês',
+    desc: 'Futuro plano pago',
+    features: ['R$ 15 por responsável', 'Tudo compartilhado pelo par', 'Pagamentos via Mercado Pago', 'Mais armazenamento controlado', 'Sem cobrança durante o beta'],
     cta: 'Em breve',
     highlight: true,
   },
@@ -94,7 +94,7 @@ export default function BetaWelcome() {
           <div>
             <p className="font-medium text-yellow-900 text-sm">Versão Beta</p>
             <p className="text-yellow-700 text-sm mt-1">
-              Estamos em fase de testes. Seu feedback é essencial. Todos os dados são armazenados com segurança no Supabase. Funcionalidades premium serão lançadas em breve.
+              Estamos em fase de testes e ainda nao ha cobranca. Para proteger os custos do Supabase, o beta cortesia permite ate 2 filhos e somente fotos em thumbnail.
             </p>
           </div>
         </div>
@@ -124,7 +124,7 @@ export default function BetaWelcome() {
         <div className="max-w-4xl mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="font-display text-3xl font-bold text-slate-900 mb-3">Planos simples</h2>
-            <p className="text-slate-600">Comece de graça, evolua quando precisar</p>
+            <p className="text-slate-600">Durante o beta, nenhum pagamento e cobrado</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {plans.map((plan) => (

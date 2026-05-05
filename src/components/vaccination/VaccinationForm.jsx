@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Upload } from 'lucide-react'
+import { Lock } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import { createStorageReference, safeFileExtension, validateUploadFile } from '@/lib/uploads'
-import { useAuth } from '@/context/AuthContext'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -24,11 +22,9 @@ const empty = {
 }
 
 export default function VaccinationForm({ open, onClose, onSaved, childId, vaccine, catalog = [] }) {
-  const { userId } = useAuth()
   const [form, setForm] = useState(empty)
   const [manual, setManual] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [uploading, setUploading] = useState(false)
 
   useEffect(() => {
     if (vaccine) {
@@ -56,26 +52,6 @@ export default function VaccinationForm({ open, onClose, onSaved, childId, vacci
         vaccine_name: v.vaccine_name,
         dose_label: v.dose_label,
       }))
-    }
-  }
-
-  const handleAttachmentUpload = async (e) => {
-    const file = e.target.files[0]
-    if (!file) return
-    const invalid = validateUploadFile(file, 'document')
-    if (invalid) { toast.error(invalid); return }
-    setUploading(true)
-    try {
-      const ext = safeFileExtension(file)
-      const path = `vaccinations/${userId}/${childId}/${Date.now()}.${ext}`
-      const { error } = await supabase.storage.from('uploads').upload(path, file, { upsert: true })
-      if (error) throw error
-      setForm(f => ({ ...f, attachment_url: createStorageReference(path) }))
-      toast.success('Anexo enviado.')
-    } catch (err) {
-      toast.error('Erro ao enviar anexo: ' + err.message)
-    } finally {
-      setUploading(false)
     }
   }
 
@@ -172,12 +148,10 @@ export default function VaccinationForm({ open, onClose, onSaved, childId, vacci
                 Ver anexo enviado
               </SecureFileLink>
             )}
-            <Label className="cursor-pointer">
-              <input type="file" accept="image/*,.pdf" className="hidden" onChange={handleAttachmentUpload} />
-              <Button type="button" variant="outline" size="sm" className="gap-2" disabled={uploading} asChild>
-                <span><Upload className="h-3.5 w-3.5" />{uploading ? 'Enviando...' : 'Enviar anexo'}</span>
-              </Button>
-            </Label>
+            <div className="flex gap-2 rounded-lg border border-slate-100 bg-slate-50 p-3 text-xs text-muted-foreground">
+              <Lock className="h-3.5 w-3.5 shrink-0" />
+              <span>Upload de anexos fica desativado no beta cortesia.</span>
+            </div>
           </div>
 
           <DialogFooter>

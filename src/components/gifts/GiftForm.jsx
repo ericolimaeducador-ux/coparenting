@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Upload } from 'lucide-react'
+import { Lock } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import { useAuth } from '@/context/AuthContext'
-import { createStorageReference, safeFileExtension, validateUploadFile } from '@/lib/uploads'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -22,10 +20,8 @@ const OCCASIONS = [
 const empty = { title: '', child_id: '', occasion: 'birthday', price_estimate: '', link: '', description: '', image_url: '' }
 
 export default function GiftForm({ open, onClose, onSaved, gift, childrenList = [], suggestedBy }) {
-  const { userId } = useAuth()
   const [form, setForm] = useState(empty)
   const [loading, setLoading] = useState(false)
-  const [uploading, setUploading] = useState(false)
 
   useEffect(() => {
     if (gift) setForm({ ...empty, ...gift, price_estimate: gift.price_estimate?.toString() || '' })
@@ -34,25 +30,6 @@ export default function GiftForm({ open, onClose, onSaved, gift, childrenList = 
 
   const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target?.value ?? e }))
   const setDirect = (k) => (v) => setForm(f => ({ ...f, [k]: v }))
-
-  const handleImageUpload = async (e) => {
-    const file = e.target.files[0]
-    if (!file) return
-    const invalid = validateUploadFile(file, 'image')
-    if (invalid) { toast.error(invalid); return }
-    setUploading(true)
-    try {
-      const path = `gifts/${userId}/${Date.now()}.${safeFileExtension(file)}`
-      const { error } = await supabase.storage.from('uploads').upload(path, file, { upsert: true })
-      if (error) throw error
-      setForm(f => ({ ...f, image_url: createStorageReference(path) }))
-      toast.success('Imagem enviada!')
-    } catch (err) {
-      toast.error('Erro: ' + err.message)
-    } finally {
-      setUploading(false)
-    }
-  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -140,12 +117,10 @@ export default function GiftForm({ open, onClose, onSaved, gift, childrenList = 
                 <SecureImage src={form.image_url} alt="" className="w-full h-full object-cover" />
               </div>
             )}
-            <Label className="cursor-pointer">
-              <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-              <Button type="button" variant="outline" size="sm" className="gap-2" disabled={uploading} asChild>
-                <span><Upload className="h-3.5 w-3.5" />{uploading ? 'Enviando...' : 'Enviar imagem'}</span>
-              </Button>
-            </Label>
+            <div className="rounded-lg border border-slate-100 bg-slate-50 p-3 text-xs text-muted-foreground flex gap-2">
+              <Lock className="h-3.5 w-3.5 shrink-0" />
+              Upload de imagens de presentes fica desativado no beta cortesia.
+            </div>
           </div>
 
           <DialogFooter>

@@ -11,6 +11,13 @@ import { formatCurrency } from '@/lib/utils'
 
 const TOTAL_CENTS = 3000
 const PAYER_CENTS = 1500
+const BETA_STORAGE_LIMIT_BYTES = 200 * 1024 * 1024
+
+function formatStorage(bytes = 0) {
+  if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`
+  if (bytes >= 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${bytes} B`
+}
 
 function statusInfo(status) {
   if (status === 'paid') return { label: 'Pago', variant: 'success', icon: CheckCircle }
@@ -54,7 +61,7 @@ function PaymentRow({ name, email, status, checkoutUrl, isCurrentUser }) {
 
 export default function Billing() {
   const { userId } = useAuth()
-  const { partnership, isLoading: partnershipLoading } = usePartnershipChildren()
+  const { partnership, children = [], isLoading: partnershipLoading } = usePartnershipChildren()
 
   const { data: billing, isLoading: billingLoading } = useQuery({
     queryKey: ['partnership-billing', partnership?.id],
@@ -71,9 +78,23 @@ export default function Billing() {
     enabled: !!partnership?.id,
   })
 
+  const { data: storageBytes = 0, isLoading: storageLoading } = useQuery({
+    queryKey: ['partnership-storage-usage', partnership?.id],
+    queryFn: async () => {
+      if (!partnership?.id) return 0
+      const { data, error } = await supabase.rpc('get_partnership_storage_usage', {
+        p_partnership_id: partnership.id,
+      })
+      if (error) throw error
+      return Number(data || 0)
+    },
+    enabled: !!partnership?.id,
+  })
+
   const parent1Status = billing?.parent_1_status || 'pending'
   const parent2Status = billing?.parent_2_status || 'pending'
   const bothPaid = ['paid', 'exempt'].includes(parent1Status) && ['paid', 'exempt'].includes(parent2Status)
+  const storagePercent = Math.min(100, Math.round((storageBytes / BETA_STORAGE_LIMIT_BYTES) * 100))
 
   return (
     <PartnershipGuard>
@@ -81,11 +102,11 @@ export default function Billing() {
         <div>
           <h1 className="font-display text-2xl font-bold text-slate-900">Assinatura compartilhada</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            A assinatura e dividida igualmente entre os dois responsaveis.
+            Hoje nao ha cobranca: o beta e cortesia. No futuro, a assinatura sera dividida igualmente entre os dois responsaveis.
           </p>
         </div>
 
-        {partnershipLoading || billingLoading ? (
+        {partnershipLoading || billingLoading || storageLoading ? (
           <div className="flex justify-center py-12"><Spinner size="lg" /></div>
         ) : (
           <>
@@ -113,10 +134,42 @@ export default function Billing() {
                   </div>
                   <div className="rounded-lg border border-slate-100 p-4">
                     <p className="text-xs text-muted-foreground">Status do par</p>
-                    <p className="font-display text-2xl font-bold text-slate-900">{bothPaid ? 'Ativo' : 'Preparado'}</p>
-                    <p className="text-xs text-muted-foreground">cobranca ainda nao ativada</p>
+                    <p className="font-display text-2xl font-bold text-slate-900">{bothPaid ? 'Ativo' : 'Cortesia'}</p>
+                    <p className="text-xs text-muted-foreground">nenhuma cobranca ativa</p>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Lock className="h-4 w-4 text-primary-600" />
+                  Limites do beta cortesia
+                </CardTitle>
+                <CardDescription>
+                  Para controlar custos no Supabase, o beta permite ate 2 filhos e somente foto dos filhos em thumbnail.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-lg border border-slate-100 p-4">
+                    <p className="text-xs text-muted-foreground">Filhos cadastrados</p>
+                    <p className="font-display text-2xl font-bold text-slate-900">{children.length}/2</p>
+                    <p className="text-xs text-muted-foreground">limite do beta</p>
+                  </div>
+                  <div className="rounded-lg border border-slate-100 p-4">
+                    <p className="text-xs text-muted-foreground">Storage usado</p>
+                    <p className="font-display text-2xl font-bold text-slate-900">{formatStorage(storageBytes)}</p>
+                    <p className="text-xs text-muted-foreground">de {formatStorage(BETA_STORAGE_LIMIT_BYTES)} reservados para teste</p>
+                  </div>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                  <div className="h-full rounded-full bg-primary-600" style={{ width: `${storagePercent}%` }} />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Anexos, PDFs, comprovantes e documentos ficam desativados nesta fase. As fotos sao comprimidas antes do upload e listas nao carregam arquivos automaticamente.
+                </p>
               </CardContent>
             </Card>
 
@@ -127,7 +180,7 @@ export default function Billing() {
                   Pagamento dividido
                 </CardTitle>
                 <CardDescription>
-                  Quando a monetizacao for ativada, cada responsavel tera sua propria cobranca de R$ 15,00.
+                  Quando a monetizacao for ativada via Mercado Pago, cada responsavel tera sua propria cobranca de R$ 15,00.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -153,7 +206,7 @@ export default function Billing() {
                 <Lock className="h-4 w-4 shrink-0 mt-0.5 text-slate-500" />
                 <p>
                   Nenhuma chave de pagamento fica no app. A etapa real deve ser feita por Edge Function no Supabase,
-                  criando duas cobrancas de R$ 15,00 e salvando as URLs de checkout nesta tela.
+                  criando duas cobrancas de R$ 15,00 no Mercado Pago e salvando as URLs de checkout nesta tela.
                 </p>
               </div>
             </div>

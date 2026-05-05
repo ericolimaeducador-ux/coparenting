@@ -3,7 +3,7 @@ import { Plus, X, Upload } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
 import { usePartnershipChildren } from '@/hooks/usePartnershipChildren'
-import { createStorageReference, safeFileExtension, validateUploadFile } from '@/lib/uploads'
+import { compressImageToThumbnail, createStorageReference, validateUploadFile } from '@/lib/uploads'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -56,7 +56,7 @@ function TagInput({ label, values, onChange }) {
 
 export default function ChildForm({ open, onClose, onSaved, child }) {
   const { userId, userDisplayName } = useAuth()
-  const { partnership } = usePartnershipChildren()
+  const { partnership, children } = usePartnershipChildren()
   const [form, setForm] = useState(empty)
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -79,12 +79,15 @@ export default function ChildForm({ open, onClose, onSaved, child }) {
     if (invalid) { toast.error(invalid); return }
     setUploading(true)
     try {
-      const ext = safeFileExtension(file)
-      const path = `children/${userId}/${Date.now()}.${ext}`
-      const { error } = await supabase.storage.from('uploads').upload(path, file, { upsert: true })
+      const thumbnail = await compressImageToThumbnail(file)
+      const path = `children/${userId}/${Date.now()}.webp`
+      const { error } = await supabase.storage.from('uploads').upload(path, thumbnail, {
+        contentType: 'image/webp',
+        upsert: true,
+      })
       if (error) throw error
       setForm(f => ({ ...f, photo_url: createStorageReference(path) }))
-      toast.success('Foto enviada!')
+      toast.success('Foto otimizada e enviada!')
     } catch (err) {
       toast.error('Erro ao enviar foto: ' + err.message)
     } finally {
@@ -96,6 +99,10 @@ export default function ChildForm({ open, onClose, onSaved, child }) {
     e.preventDefault()
     if (!form.full_name.trim()) { toast.error('Nome é obrigatório'); return }
     if (!form.birth_date) { toast.error('Data de nascimento é obrigatória'); return }
+    if (!child?.id && children.length >= 2) {
+      toast.error('No beta cortesia, cada parceria pode cadastrar ate 2 filhos.')
+      return
+    }
     setLoading(true)
     try {
       const payload = {

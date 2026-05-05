@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 
 const STORAGE_REF_PREFIX = 'storage:'
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024
+const MAX_IMAGE_SIZE = 2 * 1024 * 1024
 const MAX_DOCUMENT_SIZE = 10 * 1024 * 1024
 
 const IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
@@ -34,6 +34,37 @@ export function validateUploadFile(file, kind = 'document') {
   }
 
   return null
+}
+
+export async function compressImageToThumbnail(file, maxSize = 512, quality = 0.78) {
+  const objectUrl = URL.createObjectURL(file)
+  try {
+    const image = await new Promise((resolve, reject) => {
+      const img = new Image()
+      img.onload = () => resolve(img)
+      img.onerror = reject
+      img.src = objectUrl
+    })
+
+    const scale = Math.min(1, maxSize / Math.max(image.width, image.height))
+    const width = Math.max(1, Math.round(image.width * scale))
+    const height = Math.max(1, Math.round(image.height * scale))
+    const canvas = document.createElement('canvas')
+    canvas.width = width
+    canvas.height = height
+
+    const ctx = canvas.getContext('2d')
+    ctx.drawImage(image, 0, 0, width, height)
+
+    return await new Promise((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (!blob) reject(new Error('Nao foi possivel otimizar a imagem.'))
+        else resolve(blob)
+      }, 'image/webp', quality)
+    })
+  } finally {
+    URL.revokeObjectURL(objectUrl)
+  }
 }
 
 export function createStorageReference(path) {
