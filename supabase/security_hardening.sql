@@ -4,6 +4,12 @@
 
 ALTER TABLE partnerships ENABLE ROW LEVEL SECURITY;
 
+ALTER TABLE partnerships
+ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
+
+ALTER TABLE partnerships
+ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+
 DROP POLICY IF EXISTS "partnerships_insert" ON partnerships;
 CREATE POLICY "partnerships_insert" ON partnerships FOR INSERT WITH CHECK (
   parent_1_id = auth.uid()
