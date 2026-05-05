@@ -11,6 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { formatDate, calculateAge } from '@/lib/utils'
 import { differenceInMonths, differenceInDays, parseISO, addMonths, addDays } from 'date-fns'
 import VaccinationForm from '@/components/vaccination/VaccinationForm'
+import { SecureFileLink } from '@/components/shared/SecureFile'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
@@ -283,9 +284,9 @@ export default function Vaccination() {
                     {v.lot_number && <p className="text-xs text-muted-foreground">Lote: {v.lot_number}</p>}
                     {v.notes && <p className="text-xs text-slate-600 mt-1">{v.notes}</p>}
                     {v.attachment_url && (
-                      <a href={v.attachment_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-primary-600 hover:underline mt-1">
+                      <SecureFileLink href={v.attachment_url} className="inline-flex items-center gap-1 text-xs text-primary-600 hover:underline mt-1">
                         <Download className="h-3 w-3" /> Ver anexo
-                      </a>
+                      </SecureFileLink>
                     )}
                   </div>
                   <AlertDialog>

@@ -24,6 +24,14 @@ CREATE TABLE IF NOT EXISTS partnerships (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS one_active_partnership_parent_1
+  ON partnerships (parent_1_id)
+  WHERE status = 'active';
+
+CREATE UNIQUE INDEX IF NOT EXISTS one_active_partnership_parent_2
+  ON partnerships (parent_2_id)
+  WHERE status = 'active' AND parent_2_id IS NOT NULL;
+
 -- ============================================================
 -- CHILDREN
 -- ============================================================
@@ -105,6 +113,7 @@ CREATE TABLE IF NOT EXISTS expenses (
 -- ============================================================
 CREATE TABLE IF NOT EXISTS chat_messages (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  partnership_id UUID NOT NULL REFERENCES partnerships(id) ON DELETE CASCADE,
   child_id UUID REFERENCES children(id) ON DELETE SET NULL,
   sender_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   sender_name TEXT,
@@ -223,7 +232,12 @@ ALTER TABLE child_vaccinations ENABLE ROW LEVEL SECURITY;
 
 -- PARTNERSHIPS: users can see/manage their own partnerships
 CREATE POLICY "partnerships_select" ON partnerships FOR SELECT USING (parent_1_id = auth.uid() OR parent_2_id = auth.uid());
-CREATE POLICY "partnerships_insert" ON partnerships FOR INSERT WITH CHECK (parent_1_id = auth.uid());
+CREATE POLICY "partnerships_insert" ON partnerships FOR INSERT WITH CHECK (
+  parent_1_id = auth.uid()
+  AND parent_2_id IS NULL
+  AND status = 'pending'
+  AND invite_token IS NOT NULL
+);
 CREATE POLICY "partnerships_delete" ON partnerships FOR DELETE USING (parent_1_id = auth.uid() OR parent_2_id = auth.uid());
 
 -- Accepting an invite needs to update a row before the invited user is parent_2.
@@ -292,21 +306,31 @@ CREATE POLICY "expenses_access" ON expenses FOR ALL USING (
 
 -- CHAT MESSAGES: users in same partnership
 CREATE POLICY "chat_messages_select" ON chat_messages FOR SELECT USING (
-  sender_id IN (
-    SELECT parent_1_id FROM partnerships WHERE parent_1_id = auth.uid() OR parent_2_id = auth.uid()
-    UNION
-    SELECT parent_2_id FROM partnerships WHERE parent_1_id = auth.uid() OR parent_2_id = auth.uid()
+  EXISTS (
+    SELECT 1 FROM partnerships
+    WHERE id = chat_messages.partnership_id
+      AND status = 'active'
+      AND (parent_1_id = auth.uid() OR parent_2_id = auth.uid())
   )
 );
 CREATE POLICY "chat_messages_insert" ON chat_messages FOR INSERT WITH CHECK (
   sender_id = auth.uid()
   AND EXISTS (
     SELECT 1 FROM partnerships
-    WHERE status = 'active'
+    WHERE id = chat_messages.partnership_id
+      AND status = 'active'
       AND (parent_1_id = auth.uid() OR parent_2_id = auth.uid())
   )
 );
-CREATE POLICY "chat_messages_delete" ON chat_messages FOR DELETE USING (sender_id = auth.uid());
+CREATE POLICY "chat_messages_delete" ON chat_messages FOR DELETE USING (
+  sender_id = auth.uid()
+  AND EXISTS (
+    SELECT 1 FROM partnerships
+    WHERE id = chat_messages.partnership_id
+      AND status = 'active'
+      AND (parent_1_id = auth.uid() OR parent_2_id = auth.uid())
+  )
+);
 
 CREATE OR REPLACE FUNCTION mark_partnership_messages_read(p_partnership_id UUID)
 RETURNS VOID
@@ -332,6 +356,7 @@ BEGIN
   UPDATE chat_messages
   SET read = TRUE
   WHERE read = FALSE
+    AND partnership_id = p_partnership_id
     AND sender_id <> auth.uid()
     AND sender_id IN (v_parent_1, v_parent_2);
 END;
@@ -421,3 +446,32 @@ ON CONFLICT (vaccine_key) DO NOTHING;
 -- Public: true (para acesso público às fotos e documentos)
 -- Ou execute:
 -- INSERT INTO storage.buckets (id, name, public) VALUES ('uploads', 'uploads', true) ON CONFLICT DO NOTHING;
+
+-- Security hardening: prefer a private bucket with authenticated owner-folder access.
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('uploads', 'uploads', false)
+ON CONFLICT (id) DO UPDATE SET public = false;
+
+CREATE POLICY "uploads_user_read" ON storage.objects FOR SELECT USING (
+  bucket_id = 'uploads'
+  AND auth.role() = 'authenticated'
+  AND (storage.foldername(name))[2] IN (
+    SELECT parent_1_id::text FROM partnerships WHERE parent_1_id = auth.uid() OR parent_2_id = auth.uid()
+    UNION
+    SELECT parent_2_id::text FROM partnerships WHERE parent_1_id = auth.uid() OR parent_2_id = auth.uid()
+    UNION
+    SELECT auth.uid()::text
+  )
+);
+
+CREATE POLICY "uploads_user_insert" ON storage.objects FOR INSERT WITH CHECK (
+  bucket_id = 'uploads'
+  AND auth.role() = 'authenticated'
+  AND (storage.foldername(name))[2] = auth.uid()::text
+);
+
+CREATE POLICY "uploads_user_update" ON storage.objects FOR UPDATE USING (
+  bucket_id = 'uploads'
+  AND auth.role() = 'authenticated'
+  AND (storage.foldername(name))[2] = auth.uid()::text
+);

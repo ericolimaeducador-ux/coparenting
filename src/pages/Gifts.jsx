@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge, Spinner } from '@/components/ui/misc'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
+import { SecureImage } from '@/components/shared/SecureFile'
 import { formatCurrency } from '@/lib/utils'
 import GiftForm from '@/components/gifts/GiftForm'
 import { toast } from 'sonner'
@@ -33,7 +34,7 @@ function GiftCard({ gift, onEdit, onDelete, onApprove, onMarkPurchased }) {
     <div className="rounded-xl border border-slate-100 bg-white p-4 hover:shadow-sm transition-shadow">
       {gift.image_url && (
         <div className="w-full h-32 rounded-lg overflow-hidden mb-3 bg-slate-50">
-          <img src={gift.image_url} alt={gift.title} className="w-full h-full object-cover" />
+          <SecureImage src={gift.image_url} alt={gift.title} className="w-full h-full object-cover" />
         </div>
       )}
       <div className="space-y-2">

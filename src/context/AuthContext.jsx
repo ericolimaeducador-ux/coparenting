@@ -3,6 +3,11 @@ import { supabase } from '@/lib/supabase'
 
 const AuthContext = createContext({})
 
+const withTimeout = (promise, timeoutMs = 3000) => Promise.race([
+  promise,
+  new Promise((_, reject) => setTimeout(() => reject(new Error('auth_timeout')), timeoutMs)),
+])
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [session, setSession] = useState(null)
@@ -10,11 +15,18 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      setLoading(false)
-    })
+    withTimeout(supabase.auth.getSession())
+      .then(({ data: { session } }) => {
+        setSession(session)
+        setUser(session?.user ?? null)
+      })
+      .catch(() => {
+        setSession(null)
+        setUser(null)
+      })
+      .finally(() => {
+        setLoading(false)
+      })
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(

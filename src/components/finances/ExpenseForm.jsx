@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react'
 import { Upload } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
+import { createStorageReference, safeFileExtension, validateUploadFile } from '@/lib/uploads'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea, Label } from '@/components/ui/misc'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { SecureFileLink } from '@/components/shared/SecureFile'
 import { toast } from 'sonner'
 
 const CATEGORIES = [
@@ -43,14 +45,15 @@ export default function ExpenseForm({ open, onClose, onSaved, expense, childrenL
   const handleReceiptUpload = async (e) => {
     const file = e.target.files[0]
     if (!file) return
+    const invalid = validateUploadFile(file, 'document')
+    if (invalid) { toast.error(invalid); return }
     setUploading(true)
     try {
-      const ext = file.name.split('.').pop()
+      const ext = safeFileExtension(file)
       const path = `receipts/${userId}/${Date.now()}.${ext}`
       const { error } = await supabase.storage.from('uploads').upload(path, file, { upsert: true })
       if (error) throw error
-      const { data: { publicUrl } } = supabase.storage.from('uploads').getPublicUrl(path)
-      setForm(f => ({ ...f, receipt_url: publicUrl }))
+      setForm(f => ({ ...f, receipt_url: createStorageReference(path) }))
       toast.success('Comprovante enviado!')
     } catch (err) {
       toast.error('Erro: ' + err.message)
@@ -151,9 +154,9 @@ export default function ExpenseForm({ open, onClose, onSaved, expense, childrenL
           <div className="space-y-1.5">
             <Label>Comprovante</Label>
             {form.receipt_url && (
-              <a href={form.receipt_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary-600 hover:underline block mb-1">
+              <SecureFileLink href={form.receipt_url} className="text-xs text-primary-600 hover:underline block mb-1">
                 Ver comprovante atual
-              </a>
+              </SecureFileLink>
             )}
             <Label className="cursor-pointer">
               <input type="file" accept="image/*,.pdf" className="hidden" onChange={handleReceiptUpload} />

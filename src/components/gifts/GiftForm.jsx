@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react'
 import { Upload } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
+import { createStorageReference, safeFileExtension, validateUploadFile } from '@/lib/uploads'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea, Label } from '@/components/ui/misc'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { SecureImage } from '@/components/shared/SecureFile'
 import { toast } from 'sonner'
 
 const OCCASIONS = [
@@ -36,13 +38,14 @@ export default function GiftForm({ open, onClose, onSaved, gift, childrenList = 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0]
     if (!file) return
+    const invalid = validateUploadFile(file, 'image')
+    if (invalid) { toast.error(invalid); return }
     setUploading(true)
     try {
-      const path = `gifts/${userId}/${Date.now()}.${file.name.split('.').pop()}`
+      const path = `gifts/${userId}/${Date.now()}.${safeFileExtension(file)}`
       const { error } = await supabase.storage.from('uploads').upload(path, file, { upsert: true })
       if (error) throw error
-      const { data: { publicUrl } } = supabase.storage.from('uploads').getPublicUrl(path)
-      setForm(f => ({ ...f, image_url: publicUrl }))
+      setForm(f => ({ ...f, image_url: createStorageReference(path) }))
       toast.success('Imagem enviada!')
     } catch (err) {
       toast.error('Erro: ' + err.message)
@@ -134,7 +137,7 @@ export default function GiftForm({ open, onClose, onSaved, gift, childrenList = 
             <Label>Imagem</Label>
             {form.image_url && (
               <div className="w-full h-32 rounded-lg overflow-hidden bg-slate-50 mb-2">
-                <img src={form.image_url} alt="" className="w-full h-full object-cover" />
+                <SecureImage src={form.image_url} alt="" className="w-full h-full object-cover" />
               </div>
             )}
             <Label className="cursor-pointer">

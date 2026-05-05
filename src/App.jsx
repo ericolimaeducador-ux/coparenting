@@ -16,6 +16,7 @@ import Gifts from '@/pages/Gifts'
 import Settings from '@/pages/Settings'
 import ChildProfile from '@/pages/ChildProfile'
 import Vaccination from '@/pages/Vaccination'
+import UpdatePassword from '@/pages/UpdatePassword'
 import PageNotFound from '@/pages/PageNotFound'
 
 const queryClient = new QueryClient({
@@ -79,6 +80,7 @@ function AppRoutes() {
       {/* Public */}
       <Route path="/" element={<BetaWelcome />} />
       <Route path="/auth" element={isAuthenticated ? <AuthRedirect /> : <AuthPage />} />
+      <Route path="/update-password" element={<UpdatePassword />} />
 
       {/* Protected with layout */}
       <Route path="/home" element={<AppLayout><Home /></AppLayout>} />

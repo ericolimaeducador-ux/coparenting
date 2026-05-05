@@ -71,8 +71,8 @@ function QuickStat({ icon: Icon, label, value, color }) {
 }
 
 export default function Home() {
-  const { userDisplayName } = useAuth()
-  const { children, childIds, isLoading } = usePartnershipChildren()
+  const { userDisplayName, userId } = useAuth()
+  const { partnership, children, childIds, isLoading } = usePartnershipChildren()
   const [showChildForm, setShowChildForm] = useState(false)
   const qc = useQueryClient()
   const firstName = userDisplayName.split(' ')[0]
@@ -110,7 +110,7 @@ export default function Home() {
   })
 
   const { data: stats } = useQuery({
-    queryKey: ['home-stats', childIds],
+    queryKey: ['home-stats', childIds, partnership?.id, userId],
     queryFn: async () => {
       if (!childIds.length) return {}
       const monthStart = startOfMonth(now).toISOString()
@@ -121,7 +121,8 @@ export default function Home() {
           .in('child_id', childIds).gte('start_date', monthStart).lte('start_date', monthEnd),
         supabase.from('expenses').select('amount, type').in('child_id', childIds)
           .gte('date', monthStart.split('T')[0]).lte('date', monthEnd.split('T')[0]),
-        supabase.from('chat_messages').select('id', { count: 'exact', head: true }).eq('read', false),
+        supabase.from('chat_messages').select('id', { count: 'exact', head: true })
+          .eq('partnership_id', partnership.id).eq('read', false).neq('sender_id', userId),
         supabase.from('gift_suggestions').select('id', { count: 'exact', head: true })
           .in('child_id', childIds).eq('status', 'suggested'),
       ])
@@ -137,7 +138,7 @@ export default function Home() {
         pendingGifts: giftsRes.count || 0,
       }
     },
-    enabled: childIds.length > 0,
+    enabled: childIds.length > 0 && !!partnership?.id && !!userId,
   })
 
   return (

@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { usePartnershipChildren } from '@/hooks/usePartnershipChildren'
 import PartnershipGuard from '@/components/shared/PartnershipGuard'
 import { CategoryBadge } from '@/components/shared/CategoryBadge'
+import { SecureFileLink } from '@/components/shared/SecureFile'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Spinner } from '@/components/ui/misc'
@@ -149,9 +150,9 @@ export default function Finances() {
                           {exp.type === 'income' ? '+' : '-'}{formatCurrency(exp.amount)}
                         </span>
                         {exp.receipt_url && (
-                          <a href={exp.receipt_url} target="_blank" rel="noopener noreferrer">
+                          <SecureFileLink href={exp.receipt_url}>
                             <Button variant="ghost" size="icon-sm"><FileText className="h-3.5 w-3.5" /></Button>
-                          </a>
+                          </SecureFileLink>
                         )}
                         <Button variant="ghost" size="icon-sm" onClick={() => { setEditExpense(exp); setShowForm(true) }}>
                           <Edit className="h-3.5 w-3.5" />

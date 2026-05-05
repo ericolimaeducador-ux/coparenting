@@ -3,12 +3,14 @@ import { Plus, X, Upload } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
 import { usePartnershipChildren } from '@/hooks/usePartnershipChildren'
+import { createStorageReference, safeFileExtension, validateUploadFile } from '@/lib/uploads'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea, Label } from '@/components/ui/misc'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { SecureImage } from '@/components/shared/SecureFile'
 import { toast } from 'sonner'
 
 const BLOOD_TYPES = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
@@ -73,15 +75,15 @@ export default function ChildForm({ open, onClose, onSaved, child }) {
   const handlePhotoUpload = async (e) => {
     const file = e.target.files[0]
     if (!file) return
-    if (file.size > 5 * 1024 * 1024) { toast.error('Foto deve ter no máximo 5MB'); return }
+    const invalid = validateUploadFile(file, 'image')
+    if (invalid) { toast.error(invalid); return }
     setUploading(true)
     try {
-      const ext = file.name.split('.').pop()
+      const ext = safeFileExtension(file)
       const path = `children/${userId}/${Date.now()}.${ext}`
       const { error } = await supabase.storage.from('uploads').upload(path, file, { upsert: true })
       if (error) throw error
-      const { data: { publicUrl } } = supabase.storage.from('uploads').getPublicUrl(path)
-      setForm(f => ({ ...f, photo_url: publicUrl }))
+      setForm(f => ({ ...f, photo_url: createStorageReference(path) }))
       toast.success('Foto enviada!')
     } catch (err) {
       toast.error('Erro ao enviar foto: ' + err.message)
@@ -140,7 +142,7 @@ export default function ChildForm({ open, onClose, onSaved, child }) {
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 rounded-full bg-slate-100 overflow-hidden flex items-center justify-center shrink-0">
                   {form.photo_url
-                    ? <img src={form.photo_url} className="w-full h-full object-cover" alt="" />
+                    ? <SecureImage src={form.photo_url} className="w-full h-full object-cover" alt="" />
                     : <span className="text-2xl font-bold text-slate-400">{form.full_name?.[0] || '?'}</span>
                   }
                 </div>

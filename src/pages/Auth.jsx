@@ -108,12 +108,12 @@ export default function AuthPage() {
       </div>
 
       {/* Right — form */}
-      <div className="flex-1 flex items-center justify-center p-6">
-        <div className="w-full max-w-md animate-fade-in">
+      <div className="flex-1 min-w-0 w-full flex items-center justify-center p-4 sm:p-6">
+        <div className="w-full min-w-0 animate-fade-in" style={{ maxWidth: 'min(28rem, calc(100vw - 4rem))' }}>
           {/* Mobile logo */}
           <AppLogo className="mb-8 lg:hidden" markClassName="h-10 w-14" wordmarkClassName="text-base" />
 
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-lg p-8">
+          <div className="w-full max-w-full bg-white rounded-2xl border border-slate-100 shadow-lg p-6 sm:p-8 overflow-hidden">
             <div className="mb-6">
               <h2 className="font-display text-2xl font-bold text-slate-900">
                 {mode === 'login' && 'Entrar na conta'}

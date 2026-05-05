@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Send, Paperclip, MessageCircle } from 'lucide-react'
+import { Send, MessageCircle } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
 import { usePartnershipChildren } from '@/hooks/usePartnershipChildren'
@@ -8,7 +8,7 @@ import PartnershipGuard from '@/components/shared/PartnershipGuard'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Avatar, Spinner } from '@/components/ui/misc'
-import { formatRelative, getInitials } from '@/lib/utils'
+import { formatRelative } from '@/lib/utils'
 import { format, isToday, isYesterday, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { toast } from 'sonner'
@@ -42,11 +42,11 @@ export default function Chat() {
   const { data: messages = [], isLoading } = useQuery({
     queryKey: ['chat-messages', partnership?.id],
     queryFn: async () => {
-      if (!parentIds.length) return []
+      if (!partnership?.id) return []
       const { data, error } = await supabase
         .from('chat_messages')
         .select('*')
-        .in('sender_id', parentIds)
+        .eq('partnership_id', partnership.id)
         .order('created_at', { ascending: true })
         .limit(200)
       if (error) throw error
@@ -64,12 +64,17 @@ export default function Chat() {
     if (!partnership?.id) return
     const sub = supabase
       .channel(`chat-${partnership.id}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, () => {
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'chat_messages',
+        filter: `partnership_id=eq.${partnership.id}`,
+      }, () => {
         qc.invalidateQueries(['chat-messages'])
       })
       .subscribe()
     return () => sub.unsubscribe()
-  }, [partnership?.id])
+  }, [partnership?.id, qc])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -81,6 +86,7 @@ export default function Chat() {
     setSending(true)
     try {
       const { error } = await supabase.from('chat_messages').insert({
+        partnership_id: partnership.id,
         sender_id: userId,
         sender_name: userDisplayName,
         content: text.trim(),

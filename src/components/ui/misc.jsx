@@ -1,6 +1,7 @@
 import * as React from 'react'
 import * as LabelPrimitive from '@radix-ui/react-label'
 import { cn } from '@/lib/utils'
+import { useStorageUrl } from '@/lib/uploads'
 
 // Label
 const Label = React.forwardRef(({ className, ...props }, ref) => (
@@ -91,6 +92,7 @@ function Spinner({ className, size = 'default' }) {
 
 // Avatar
 function Avatar({ src, name, size = 'default', className }) {
+  const resolvedSrc = useStorageUrl(src)
   const sizes = {
     xs: 'h-6 w-6 text-xs',
     sm: 'h-8 w-8 text-sm',
@@ -104,8 +106,8 @@ function Avatar({ src, name, size = 'default', className }) {
 
   return (
     <div className={cn('relative flex shrink-0 overflow-hidden rounded-full', sizes[size] || sizes.default, className)}>
-      {src ? (
-        <img src={src} alt={name} className="aspect-square h-full w-full object-cover" />
+      {resolvedSrc ? (
+        <img src={resolvedSrc} alt={name} className="aspect-square h-full w-full object-cover" />
       ) : (
         <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary-400 to-primary-600 font-medium text-white">
           {initials}

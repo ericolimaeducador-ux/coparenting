@@ -2,11 +2,13 @@ import { useState } from 'react'
 import { Upload } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
+import { createStorageReference, safeFileExtension, validateUploadFile } from '@/lib/uploads'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea, Label } from '@/components/ui/misc'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { SecureFileLink } from '@/components/shared/SecureFile'
 import { toast } from 'sonner'
 
 const TYPES = [
@@ -40,14 +42,15 @@ export default function SchoolRecordForm({ open, onClose, onSaved, childId }) {
   const handleUpload = async (e) => {
     const file = e.target.files[0]
     if (!file) return
+    const invalid = validateUploadFile(file, 'document')
+    if (invalid) { toast.error(invalid); return }
     setUploading(true)
     try {
-      const ext = file.name.split('.').pop()
+      const ext = safeFileExtension(file)
       const path = `school/${userId}/${childId}/${Date.now()}.${ext}`
       const { error } = await supabase.storage.from('uploads').upload(path, file, { upsert: true })
       if (error) throw error
-      const { data: { publicUrl } } = supabase.storage.from('uploads').getPublicUrl(path)
-      setForm(f => ({ ...f, attachment_url: publicUrl }))
+      setForm(f => ({ ...f, attachment_url: createStorageReference(path) }))
       toast.success('Anexo enviado.')
     } catch (err) {
       toast.error('Erro ao enviar anexo: ' + err.message)
@@ -124,7 +127,7 @@ export default function SchoolRecordForm({ open, onClose, onSaved, childId }) {
 
           <div className="space-y-1.5">
             <Label>Anexo</Label>
-            {form.attachment_url && <a href={form.attachment_url} target="_blank" rel="noopener noreferrer" className="block text-xs text-primary-600 hover:underline">Ver anexo enviado</a>}
+            {form.attachment_url && <SecureFileLink href={form.attachment_url} className="block text-xs text-primary-600 hover:underline">Ver anexo enviado</SecureFileLink>}
             <Label className="cursor-pointer">
               <input type="file" accept="image/*,.pdf" className="hidden" onChange={handleUpload} />
               <Button type="button" variant="outline" size="sm" className="gap-2" disabled={uploading} asChild>

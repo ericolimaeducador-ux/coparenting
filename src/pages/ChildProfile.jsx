@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Edit, Syringe, Heart, School, FileText, Activity, Download, Phone, Mail, MapPin, Plus, Upload } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
+import { createStorageReference, safeFileExtension, validateUploadFile } from '@/lib/uploads'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
@@ -12,6 +13,7 @@ import { calculateAge, formatDate } from '@/lib/utils'
 import ChildForm from '@/components/children/ChildForm'
 import HealthRecordForm from '@/components/children/HealthRecordForm'
 import SchoolRecordForm from '@/components/children/SchoolRecordForm'
+import { SecureFileLink } from '@/components/shared/SecureFile'
 import { toast } from 'sonner'
 
 function InfoRow({ label, value }) {
@@ -48,14 +50,15 @@ export default function ChildProfile() {
   const handleDocumentUpload = async (e) => {
     const file = e.target.files[0]
     if (!file || !child) return
+    const invalid = validateUploadFile(file, 'document')
+    if (invalid) { toast.error(invalid); return }
     setUploadingDoc(true)
     try {
-      const ext = file.name.split('.').pop()
+      const ext = safeFileExtension(file)
       const path = `documents/${userId}/${id}/${Date.now()}.${ext}`
       const { error } = await supabase.storage.from('uploads').upload(path, file, { upsert: true })
       if (error) throw error
-      const { data: { publicUrl } } = supabase.storage.from('uploads').getPublicUrl(path)
-      const documents = [...(child.documents || []), { name: file.name, url: publicUrl, type: file.type || 'file' }]
+      const documents = [...(child.documents || []), { name: file.name, url: createStorageReference(path), type: file.type || 'file' }]
       const { error: updateError } = await supabase.from('children').update({ documents }).eq('id', id)
       if (updateError) throw updateError
       toast.success('Documento anexado.')
@@ -172,9 +175,9 @@ export default function ChildProfile() {
                         {rec.notes && <p className="text-xs text-slate-600 mt-1">{rec.notes}</p>}
                       </div>
                       {rec.attachment_url && (
-                        <a href={rec.attachment_url} target="_blank" rel="noopener noreferrer">
+                        <SecureFileLink href={rec.attachment_url}>
                           <Button size="icon-sm" variant="ghost"><Download className="h-3.5 w-3.5" /></Button>
-                        </a>
+                        </SecureFileLink>
                       )}
                     </div>
                   ))}
@@ -253,9 +256,9 @@ export default function ChildProfile() {
                         {rec.notes && <p className="text-xs text-slate-600 mt-1">{rec.notes}</p>}
                       </div>
                       {rec.attachment_url && (
-                        <a href={rec.attachment_url} target="_blank" rel="noopener noreferrer">
+                        <SecureFileLink href={rec.attachment_url}>
                           <Button size="icon-sm" variant="ghost"><Download className="h-3.5 w-3.5" /></Button>
-                        </a>
+                        </SecureFileLink>
                       )}
                     </div>
                   ))}
@@ -316,9 +319,9 @@ export default function ChildProfile() {
                     <div key={i} className="flex items-center gap-3 rounded-xl border border-slate-100 p-3">
                       <FileText className="h-5 w-5 text-primary-600 shrink-0" />
                       <span className="flex-1 text-sm">{doc.name}</span>
-                      <a href={doc.url} target="_blank" rel="noopener noreferrer">
+                      <SecureFileLink href={doc.url}>
                         <Button size="icon-sm" variant="ghost"><Download className="h-3.5 w-3.5" /></Button>
-                      </a>
+                      </SecureFileLink>
                     </div>
                   ))}
                 </div>
