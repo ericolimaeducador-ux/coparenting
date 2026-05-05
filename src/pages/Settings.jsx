@@ -39,6 +39,13 @@ export default function Settings() {
     enabled: !!userId,
   })
 
+  useEffect(() => {
+    const token = searchParams.get('createdInvite')
+    if (!token) return
+    setInviteLink(`${window.location.origin}${window.location.pathname}#/auth?invite=${token}`)
+    setSearchParams({})
+  }, [searchParams, setSearchParams])
+
   // Handle invite token in URL
   useEffect(() => {
     const token = searchParams.get('invite')
@@ -90,7 +97,7 @@ export default function Settings() {
       if (error) throw error
       setInviteLink(link)
       toast.success('Parceria criada! Compartilhe o link com o co-responsável.')
-      qc.invalidateQueries(['partnership'])
+      qc.invalidateQueries({ queryKey: ['partnership'] })
     } catch (err) {
       toast.error('Erro: ' + err.message)
     } finally {
@@ -106,7 +113,7 @@ export default function Settings() {
     onSuccess: () => {
       toast.success('Parceria removida.')
       setInviteLink('')
-      qc.invalidateQueries(['partnership'])
+      qc.invalidateQueries({ queryKey: ['partnership'] })
     },
     onError: (e) => toast.error(e.message),
   })

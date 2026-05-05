@@ -95,14 +95,14 @@ export default function AuthPage() {
         }
 
         if (data?.user?.id) {
-          await createPendingPartnership({
+          const token = await createPendingPartnership({
             userId: data.user.id,
             email: form.email,
             fullName: form.fullName,
             partnerEmail: form.partnerEmail,
           })
           toast.success('Conta criada. Convite de parceria gerado.')
-          navigate('/settings')
+          navigate(`/settings?createdInvite=${encodeURIComponent(token)}`)
           return
         }
 
