@@ -21,6 +21,8 @@ export default function Settings() {
   const [inviteLink, setInviteLink] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [updatingPass, setUpdatingPass] = useState(false)
+  const [acceptingInvite, setAcceptingInvite] = useState(false)
+  const [inviteError, setInviteError] = useState('')
   const qc = useQueryClient()
 
   const { data: partnership, isLoading } = useQuery({
@@ -42,14 +44,17 @@ export default function Settings() {
     const token = searchParams.get('invite')
     if (!token || !userId) return
     const acceptInvite = async () => {
+      setAcceptingInvite(true)
+      setInviteError('')
       try {
-        const { error: acceptError } = await supabase.rpc('accept_partnership_invite', {
+        const { data: acceptedPartnership, error: acceptError } = await supabase.rpc('accept_partnership_invite', {
           p_invite_token: token,
           p_parent_email: userEmail,
           p_parent_name: userDisplayName,
         })
         if (acceptError) throw acceptError
         toast.success('Parceria aceita com sucesso! Bem-vindo(a)!')
+        qc.setQueryData(['partnership', userId], acceptedPartnership)
         qc.invalidateQueries({ queryKey: ['partnership'] })
         qc.invalidateQueries({ queryKey: ['children'] })
         setSearchParams({})
@@ -58,7 +63,10 @@ export default function Settings() {
         const message = err.message === 'invalid_or_expired_invite'
           ? 'Convite invalido, expirado ou ja aceito.'
           : err.message
+        setInviteError(message)
         toast.error('Erro ao aceitar convite: ' + message)
+      } finally {
+        setAcceptingInvite(false)
       }
     }
     acceptInvite()
@@ -165,6 +173,19 @@ export default function Settings() {
           <CardDescription>Vincule-se ao outro responsável para compartilhar informações.</CardDescription>
         </CardHeader>
         <CardContent>
+          {acceptingInvite && (
+            <div className="rounded-xl border border-blue-100 bg-blue-50 p-4 mb-4 flex items-center gap-3 text-sm text-blue-800">
+              <Spinner size="sm" />
+              Aceitando convite de parceria...
+            </div>
+          )}
+
+          {inviteError && (
+            <div className="rounded-xl border border-red-100 bg-red-50 p-4 mb-4 text-sm text-red-700">
+              Nao foi possivel aceitar o convite: {inviteError}
+            </div>
+          )}
+
           {!partnership ? (
             <div className="space-y-4">
               <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 text-sm text-muted-foreground">

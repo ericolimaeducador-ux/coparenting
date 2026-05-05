@@ -20,6 +20,48 @@ CREATE UNIQUE INDEX IF NOT EXISTS one_active_partnership_parent_2
   ON partnerships (parent_2_id)
   WHERE status = 'active' AND parent_2_id IS NOT NULL;
 
+CREATE OR REPLACE FUNCTION accept_partnership_invite(
+  p_invite_token TEXT,
+  p_parent_name TEXT,
+  p_parent_email TEXT
+)
+RETURNS partnerships
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_partnership partnerships;
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'not_authenticated';
+  END IF;
+
+  UPDATE partnerships
+  SET
+    parent_2_id = auth.uid(),
+    parent_2_email = p_parent_email,
+    parent_2_name = p_parent_name,
+    status = 'active',
+    invite_token = NULL,
+    updated_at = NOW()
+  WHERE invite_token = p_invite_token
+    AND status = 'pending'
+    AND parent_2_id IS NULL
+    AND parent_1_id <> auth.uid()
+  RETURNING * INTO v_partnership;
+
+  IF v_partnership.id IS NULL THEN
+    RAISE EXCEPTION 'invalid_or_expired_invite';
+  END IF;
+
+  RETURN v_partnership;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION accept_partnership_invite(TEXT, TEXT, TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION accept_partnership_invite(TEXT, TEXT, TEXT) TO authenticated;
+
 ALTER TABLE chat_messages
 ADD COLUMN IF NOT EXISTS partnership_id UUID REFERENCES partnerships(id) ON DELETE CASCADE;
 
