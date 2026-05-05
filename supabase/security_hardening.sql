@@ -99,6 +99,38 @@ ADD COLUMN IF NOT EXISTS attachment_url TEXT,
 ADD COLUMN IF NOT EXISTS notes TEXT,
 ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
 
+CREATE TABLE IF NOT EXISTS partnership_billing (
+  partnership_id UUID PRIMARY KEY REFERENCES partnerships(id) ON DELETE CASCADE,
+  plan_key TEXT NOT NULL DEFAULT 'shared_family',
+  currency TEXT NOT NULL DEFAULT 'BRL',
+  monthly_total_cents INTEGER NOT NULL DEFAULT 3000,
+  payer_amount_cents INTEGER NOT NULL DEFAULT 1500,
+  provider TEXT,
+  provider_customer_id TEXT,
+  provider_subscription_id TEXT,
+  parent_1_status TEXT NOT NULL DEFAULT 'pending' CHECK (parent_1_status IN ('pending','paid','overdue','exempt','cancelled')),
+  parent_2_status TEXT NOT NULL DEFAULT 'pending' CHECK (parent_2_status IN ('pending','paid','overdue','exempt','cancelled')),
+  parent_1_checkout_url TEXT,
+  parent_2_checkout_url TEXT,
+  parent_1_paid_at TIMESTAMPTZ,
+  parent_2_paid_at TIMESTAMPTZ,
+  current_period_start TIMESTAMPTZ,
+  current_period_end TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE partnership_billing ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "partnership_billing_select" ON partnership_billing;
+CREATE POLICY "partnership_billing_select" ON partnership_billing FOR SELECT USING (
+  EXISTS (
+    SELECT 1 FROM partnerships
+    WHERE partnerships.id = partnership_billing.partnership_id
+      AND (partnerships.parent_1_id = auth.uid() OR partnerships.parent_2_id = auth.uid())
+  )
+);
+
 DROP POLICY IF EXISTS "partnerships_insert" ON partnerships;
 CREATE POLICY "partnerships_insert" ON partnerships FOR INSERT WITH CHECK (
   parent_1_id = auth.uid()
@@ -150,6 +182,10 @@ BEGIN
   IF v_partnership.id IS NULL THEN
     RAISE EXCEPTION 'invalid_or_expired_invite';
   END IF;
+
+  INSERT INTO partnership_billing (partnership_id)
+  VALUES (v_partnership.id)
+  ON CONFLICT (partnership_id) DO NOTHING;
 
   RETURN v_partnership;
 END;

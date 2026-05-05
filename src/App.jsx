@@ -14,6 +14,7 @@ import Finances from '@/pages/Finances'
 import Chat from '@/pages/Chat'
 import Gifts from '@/pages/Gifts'
 import Settings from '@/pages/Settings'
+import Billing from '@/pages/Billing'
 import ChildProfile from '@/pages/ChildProfile'
 import Vaccination from '@/pages/Vaccination'
 import UpdatePassword from '@/pages/UpdatePassword'
@@ -90,6 +91,7 @@ function AppRoutes() {
       <Route path="/finances" element={<AppLayout><Finances /></AppLayout>} />
       <Route path="/chat" element={<AppLayout><Chat /></AppLayout>} />
       <Route path="/gifts" element={<AppLayout><Gifts /></AppLayout>} />
+      <Route path="/billing" element={<AppLayout><Billing /></AppLayout>} />
       <Route path="/settings" element={<AppLayout><Settings /></AppLayout>} />
       <Route path="/child-profile" element={<AppLayout><ChildProfile /></AppLayout>} />
       <Route path="/vaccination" element={<AppLayout><Vaccination /></AppLayout>} />

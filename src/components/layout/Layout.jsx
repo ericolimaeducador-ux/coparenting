@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
   Home, Calendar, DollarSign, MessageCircle, Gift,
-  Settings, LogOut, Menu, X
+  Settings, LogOut, Menu, X, CreditCard
 } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { Avatar } from '@/components/ui/misc'
@@ -18,6 +18,7 @@ const navItems = [
   { to: '/chat', icon: MessageCircle, label: 'Chat' },
   { to: '/gifts', icon: Gift, label: 'Presentes' },
   { to: '/settings', icon: Settings, label: 'Configurações' },
+  { to: '/billing', icon: CreditCard, label: 'Assinatura' },
 ]
 
 function NavItem({ to, icon: Icon, label, onClick }) {
