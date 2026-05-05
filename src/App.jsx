@@ -51,6 +51,8 @@ function ProtectedRoute({ children }) {
 
 function AuthRedirect() {
   const [searchParams] = useSearchParams()
+  const invite = searchParams.get('invite')
+  if (invite) return <Navigate to={`/settings?invite=${encodeURIComponent(invite)}`} replace />
   const redirect = searchParams.get('redirect') || '/home'
   return <Navigate to={redirect} replace />
 }

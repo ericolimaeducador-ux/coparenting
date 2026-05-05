@@ -1,44 +1,120 @@
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Eye, EyeOff, Mail, Lock, User, ArrowRight } from 'lucide-react'
+import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Users } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
+import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/misc'
 import AppLogo from '@/components/shared/AppLogo'
+import { generateToken } from '@/lib/utils'
 import { toast } from 'sonner'
 
 export default function AuthPage() {
-  const [mode, setMode] = useState('login') // 'login' | 'register' | 'forgot'
+  const [searchParams] = useSearchParams()
+  const inviteToken = searchParams.get('invite') || ''
+  const redirect = searchParams.get('redirect') || '/home'
+  const isInviteFlow = !!inviteToken
+  const requestedMode = searchParams.get('mode')
+
+  const [mode, setMode] = useState(isInviteFlow || requestedMode === 'register' ? 'register' : 'login')
   const [loading, setLoading] = useState(false)
   const [showPass, setShowPass] = useState(false)
-  const [form, setForm] = useState({ email: '', password: '', fullName: '' })
-  const { signIn, signUp, signInWithGoogle, resetPassword } = useAuth()
+  const [form, setForm] = useState({ email: '', password: '', fullName: '', partnerEmail: '' })
+  const { signIn, signUp, signInWithGoogle, resetPassword, userDisplayName } = useAuth()
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
-  const redirect = searchParams.get('redirect') || '/home'
 
   const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }))
+
+  const acceptInvite = async ({ email, fullName }) => {
+    const { error } = await supabase.rpc('accept_partnership_invite', {
+      p_invite_token: inviteToken,
+      p_parent_email: email.trim().toLowerCase(),
+      p_parent_name: fullName || userDisplayName || email.split('@')[0],
+    })
+    if (error) throw error
+  }
+
+  const createPendingPartnership = async ({ userId, email, fullName, partnerEmail }) => {
+    const token = generateToken()
+    const { error } = await supabase.from('partnerships').insert({
+      parent_1_id: userId,
+      parent_1_email: email.trim().toLowerCase(),
+      parent_1_name: fullName,
+      parent_2_email: partnerEmail.trim().toLowerCase(),
+      invite_token: token,
+      status: 'pending',
+    })
+    if (error) throw error
+    return token
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
     try {
       if (mode === 'login') {
-        const { error } = await signIn({ email: form.email, password: form.password })
+        const { data, error } = await signIn({ email: form.email, password: form.password })
         if (error) throw error
-        toast.success('Bem-vindo de volta!')
+
+        if (inviteToken) {
+          const fullName = data?.user?.user_metadata?.full_name || data?.user?.user_metadata?.name || userDisplayName
+          await acceptInvite({ email: form.email, fullName })
+          toast.success('Parceria aceita com sucesso.')
+          navigate('/home')
+          return
+        }
+
+        toast.success('Bem-vindo de volta.')
         navigate(redirect)
-      } else if (mode === 'register') {
-        if (!form.fullName.trim()) { toast.error('Informe seu nome completo'); return }
-        const { error } = await signUp({ email: form.email, password: form.password, fullName: form.fullName })
+        return
+      }
+
+      if (mode === 'register') {
+        if (!form.fullName.trim()) {
+          toast.error('Informe seu nome completo')
+          return
+        }
+        if (!isInviteFlow && !form.partnerEmail.trim()) {
+          toast.error('Informe o e-mail do outro responsavel')
+          return
+        }
+
+        const { data, error } = await signUp({
+          email: form.email,
+          password: form.password,
+          fullName: form.fullName,
+        })
         if (error) throw error
-        toast.success('Conta criada! Verifique seu e-mail para confirmar.')
+
+        if (isInviteFlow) {
+          await acceptInvite({ email: form.email, fullName: form.fullName })
+          toast.success('Conta criada e parceria vinculada.')
+          navigate('/home')
+          return
+        }
+
+        if (data?.user?.id) {
+          await createPendingPartnership({
+            userId: data.user.id,
+            email: form.email,
+            fullName: form.fullName,
+            partnerEmail: form.partnerEmail,
+          })
+          toast.success('Conta criada. Convite de parceria gerado.')
+          navigate('/settings')
+          return
+        }
+
+        toast.success('Conta criada. Confirme seu e-mail e entre para concluir o convite.')
         setMode('login')
-      } else if (mode === 'forgot') {
+        return
+      }
+
+      if (mode === 'forgot') {
         const { error } = await resetPassword(form.email)
         if (error) throw error
-        toast.success('E-mail de recuperação enviado!')
+        toast.success('E-mail de recuperacao enviado.')
         setMode('login')
       }
     } catch (err) {
@@ -51,7 +127,8 @@ export default function AuthPage() {
   const handleGoogle = async () => {
     setLoading(true)
     try {
-      const { error } = await signInWithGoogle(redirect)
+      const googleRedirect = inviteToken ? `/settings?invite=${inviteToken}` : redirect
+      const { error } = await signInWithGoogle(googleRedirect)
       if (error) throw error
     } catch (err) {
       toast.error(err.message || 'Erro ao entrar com Google.')
@@ -61,7 +138,6 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen flex bg-slate-50 mesh-bg">
-      {/* Left — branding */}
       <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 bg-gradient-to-br from-primary-700 via-primary-600 to-primary-800 text-white relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
           {[...Array(6)].map((_, i) => (
@@ -86,17 +162,16 @@ export default function AuthPage() {
             Juntos pelos filhos,<br />mesmo separados.
           </h1>
           <p className="text-primary-100 text-lg leading-relaxed max-w-sm">
-            Centralize tudo que importa para a criação dos seus filhos em um só lugar, compartilhado e seguro.
+            Cadastre-se, convide o outro responsavel e comece a compartilhar tudo em um ambiente privado.
           </p>
           <div className="grid grid-cols-2 gap-3">
             {[
-              { emoji: '📅', text: 'Calendário compartilhado' },
-              { emoji: '💰', text: 'Controle de despesas' },
-              { emoji: '💬', text: 'Comunicação direta' },
-              { emoji: '💉', text: 'Caderneta de vacinas' },
+              { text: 'Calendario compartilhado' },
+              { text: 'Controle de despesas' },
+              { text: 'Comunicacao direta' },
+              { text: 'Caderneta de vacinas' },
             ].map((f) => (
               <div key={f.text} className="flex items-center gap-2 bg-white/10 rounded-xl px-3 py-2 backdrop-blur-sm">
-                <span>{f.emoji}</span>
                 <span className="text-sm font-medium">{f.text}</span>
               </div>
             ))}
@@ -107,29 +182,32 @@ export default function AuthPage() {
         </p>
       </div>
 
-      {/* Right — form */}
       <div className="flex-1 min-w-0 w-full flex items-center justify-center p-4 sm:p-6">
         <div className="w-full min-w-0 animate-fade-in" style={{ maxWidth: 'min(28rem, calc(100vw - 4rem))' }}>
-          {/* Mobile logo */}
           <AppLogo className="mb-8 lg:hidden" markClassName="h-10 w-14" wordmarkClassName="text-base" />
 
           <div className="w-full max-w-full bg-white rounded-2xl border border-slate-100 shadow-lg p-6 sm:p-8 overflow-hidden">
             <div className="mb-6">
               <h2 className="font-display text-2xl font-bold text-slate-900">
-                {mode === 'login' && 'Entrar na conta'}
-                {mode === 'register' && 'Criar conta'}
+                {mode === 'login' && (isInviteFlow ? 'Entrar e vincular' : 'Entrar na conta')}
+                {mode === 'register' && (isInviteFlow ? 'Criar conta vinculada' : 'Criar conta')}
                 {mode === 'forgot' && 'Recuperar senha'}
               </h2>
               <p className="text-muted-foreground text-sm mt-1">
-                {mode === 'login' && 'Bem-vindo de volta!'}
-                {mode === 'register' && 'Crie sua conta gratuitamente.'}
+                {mode === 'login' && (isInviteFlow ? 'Use o e-mail convidado para aceitar a parceria.' : 'Bem-vindo de volta.')}
+                {mode === 'register' && (isInviteFlow ? 'O link sera usado para parear sua conta automaticamente.' : 'Informe tambem o e-mail do outro responsavel.')}
                 {mode === 'forgot' && 'Enviaremos um link para seu e-mail.'}
               </p>
             </div>
 
-            {/* Google button */}
             {mode !== 'forgot' && (
               <>
+                {isInviteFlow && (
+                  <div className="rounded-xl border border-primary-100 bg-primary-50 p-3 text-sm text-primary-800 mb-4">
+                    Convite de parceria detectado. Cadastre-se ou entre com o e-mail convidado.
+                  </div>
+                )}
+
                 <Button
                   type="button"
                   variant="outline"
@@ -159,20 +237,40 @@ export default function AuthPage() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               {mode === 'register' && (
-                <div className="space-y-1.5">
-                  <Label htmlFor="fullName">Nome completo</Label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="fullName"
-                      placeholder="Seu nome completo"
-                      className="pl-9"
-                      value={form.fullName}
-                      onChange={set('fullName')}
-                      required
-                    />
+                <>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="fullName">Nome completo</Label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="fullName"
+                        placeholder="Seu nome completo"
+                        className="pl-9"
+                        value={form.fullName}
+                        onChange={set('fullName')}
+                        required
+                      />
+                    </div>
                   </div>
-                </div>
+
+                  {!isInviteFlow && (
+                    <div className="space-y-1.5">
+                      <Label htmlFor="partnerEmail">E-mail do outro responsavel</Label>
+                      <div className="relative">
+                        <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="partnerEmail"
+                          type="email"
+                          placeholder="mae-ou-pai@email.com"
+                          className="pl-9"
+                          value={form.partnerEmail}
+                          onChange={set('partnerEmail')}
+                          required
+                        />
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
 
               <div className="space-y-1.5">
@@ -199,7 +297,7 @@ export default function AuthPage() {
                     <Input
                       id="password"
                       type={showPass ? 'text' : 'password'}
-                      placeholder={mode === 'register' ? 'Mínimo 8 caracteres' : '••••••••'}
+                      placeholder={mode === 'register' ? 'Minimo 8 caracteres' : '********'}
                       className="pl-9 pr-10"
                       value={form.password}
                       onChange={set('password')}
@@ -229,8 +327,8 @@ export default function AuthPage() {
               <Button type="submit" className="w-full gap-2" size="lg" disabled={loading}>
                 {loading ? 'Aguarde...' : (
                   <>
-                    {mode === 'login' && 'Entrar'}
-                    {mode === 'register' && 'Criar conta'}
+                    {mode === 'login' && (isInviteFlow ? 'Entrar e vincular' : 'Entrar')}
+                    {mode === 'register' && (isInviteFlow ? 'Criar conta e vincular' : 'Criar conta e gerar convite')}
                     {mode === 'forgot' && 'Enviar link'}
                     <ArrowRight className="h-4 w-4" />
                   </>
@@ -241,15 +339,15 @@ export default function AuthPage() {
             <div className="mt-4 text-center text-sm text-muted-foreground">
               {mode === 'login' && (
                 <>
-                  Não tem conta?{' '}
+                  Nao tem conta?{' '}
                   <button className="text-primary-600 font-medium hover:underline" onClick={() => setMode('register')}>
-                    Cadastre-se grátis
+                    Cadastre-se gratis
                   </button>
                 </>
               )}
               {mode === 'register' && (
                 <>
-                  Já tem conta?{' '}
+                  Ja tem conta?{' '}
                   <button className="text-primary-600 font-medium hover:underline" onClick={() => setMode('login')}>
                     Entrar
                   </button>

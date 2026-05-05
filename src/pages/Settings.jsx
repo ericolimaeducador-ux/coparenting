@@ -78,11 +78,12 @@ export default function Settings() {
     setInviting(true)
     try {
       const token = generateToken()
-      const link = `${window.location.origin}${window.location.pathname}#/settings?invite=${token}`
+      const link = `${window.location.origin}${window.location.pathname}#/auth?invite=${token}`
       const { error } = await supabase.from('partnerships').insert({
         parent_1_id: userId,
         parent_1_email: userEmail,
         parent_1_name: userDisplayName,
+        parent_2_email: inviteEmail.trim().toLowerCase(),
         invite_token: token,
         status: 'pending',
       })
@@ -112,7 +113,7 @@ export default function Settings() {
 
   const copyLink = () => {
     const link = inviteLink || (partnership?.invite_token
-      ? `${window.location.origin}${window.location.pathname}#/settings?invite=${partnership.invite_token}`
+      ? `${window.location.origin}${window.location.pathname}#/auth?invite=${partnership.invite_token}`
       : '')
     navigator.clipboard.writeText(link).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000) })
   }
@@ -193,7 +194,7 @@ export default function Settings() {
               </div>
               <form onSubmit={handleInvite} className="space-y-3">
                 <div className="space-y-1.5">
-                  <Label>E-mail do parceiro(a) <span className="text-xs text-muted-foreground">(informativo)</span></Label>
+                  <Label>E-mail do outro responsavel</Label>
                   <Input
                     type="email"
                     value={inviteEmail}
@@ -231,7 +232,7 @@ export default function Settings() {
               </div>
               <div className="flex gap-2">
                 <Input
-                  value={`${window.location.origin}${window.location.pathname}#/settings?invite=${partnership.invite_token}`}
+                  value={`${window.location.origin}${window.location.pathname}#/auth?invite=${partnership.invite_token}`}
                   readOnly
                   className="text-xs"
                 />

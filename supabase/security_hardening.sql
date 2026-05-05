@@ -48,6 +48,7 @@ BEGIN
   WHERE invite_token = p_invite_token
     AND status = 'pending'
     AND parent_2_id IS NULL
+    AND (parent_2_email IS NULL OR LOWER(parent_2_email) = LOWER(p_parent_email))
     AND parent_1_id <> auth.uid()
   RETURNING * INTO v_partnership;
 

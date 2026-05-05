@@ -47,7 +47,7 @@ export default function BetaWelcome() {
             <Link to="/auth">
               <Button variant="ghost" size="sm">Entrar</Button>
             </Link>
-            <Link to="/auth">
+            <Link to="/auth?mode=register">
               <Button size="sm">Começar grátis</Button>
             </Link>
           </div>
@@ -70,7 +70,7 @@ export default function BetaWelcome() {
             Uma plataforma privada e segura para dois responsáveis gerenciarem a criação dos filhos juntos — mesmo separados.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link to="/auth">
+            <Link to="/auth?mode=register">
               <Button size="xl" className="gap-2 shadow-lg shadow-primary-200">
                 Criar conta gratuita
                 <ArrowRight className="h-5 w-5" />
@@ -157,7 +157,7 @@ export default function BetaWelcome() {
                     </li>
                   ))}
                 </ul>
-                <Link to={plan.highlight ? '#' : '/auth'}>
+                <Link to={plan.highlight ? '#' : '/auth?mode=register'}>
                   <Button
                     className="w-full"
                     variant={plan.highlight ? 'secondary' : 'default'}
