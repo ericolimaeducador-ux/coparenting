@@ -173,7 +173,7 @@ export default function AuthPage() {
           </div>
         </div>
         <p className="relative z-10 text-primary-200 text-sm">
-          © {new Date().getFullYear()} CoParent · Privado e seguro
+          © {new Date().getFullYear()} 2for1 · Privado e seguro
         </p>
       </div>
 

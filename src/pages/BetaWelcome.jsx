@@ -370,7 +370,7 @@ export default function BetaWelcome() {
             </div>
             <div className="grid grid-cols-[1.3fr_0.7fr_0.7fr_0.7fr] gap-px bg-white/10 text-sm">
               <div className="bg-[#09111b] px-4 py-3 font-medium text-white">Capacidade</div>
-              <div className="bg-[#09111b] px-4 py-3 text-center font-medium text-white">CoParent</div>
+              <div className="bg-[#09111b] px-4 py-3 text-center font-medium text-white">2for1</div>
               <div className="bg-[#09111b] px-4 py-3 text-center font-medium text-white">WhatsApp</div>
               <div className="bg-[#09111b] px-4 py-3 text-center font-medium text-white">Planilha</div>
               {comparison.map((row) => (
@@ -389,7 +389,7 @@ export default function BetaWelcome() {
       <section className="mx-auto max-w-7xl px-4 pb-20">
         <div className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
           <div className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-8">
-            <p className="text-xs uppercase tracking-[0.35em] text-cyan-100/60">Why it sells</p>
+            <p className="text-xs uppercase tracking-[0.35em] text-cyan-100/60">Por que converte</p>
             <h2 className="mt-3 font-display text-4xl font-bold text-white">O app deixa o valor visivel em segundos.</h2>
             <p className="mt-4 text-slate-400">
               Em vez de listar apenas features, mostramos a experiencia: a agenda, a conversa e o dinheiro em telas
@@ -447,7 +447,7 @@ export default function BetaWelcome() {
 
       <section className="mx-auto max-w-7xl px-4 pb-20">
         <div className="mb-10 text-center">
-          <p className="text-xs uppercase tracking-[0.35em] text-cyan-100/60">Features</p>
+          <p className="text-xs uppercase tracking-[0.35em] text-cyan-100/60">Detalhes</p>
           <h2 className="mt-3 font-display text-4xl font-bold text-white">Detalhes que fazem o produto parecer real</h2>
           <p className="mt-4 text-slate-400">A pagina agora mostra telas do app em mockups de celular, como a referencia comercial faz.</p>
         </div>

@@ -1,4 +1,4 @@
-# 👨‍👩‍👧 CoParent — Plataforma de Coparentalidade
+# 2for1 — Plataforma de Coparentalidade
 
 Uma aplicação web completa para pais separados que compartilham a criação dos filhos.  
 **Stack:** React 18 + Vite + Tailwind CSS + Supabase + GitHub Pages
@@ -121,7 +121,7 @@ Acesse [http://localhost:5173](http://localhost:5173)
 ## 📁 Estrutura do projeto
 
 ```
-coparenting/
+2for1/
 ├── .github/
 │   └── workflows/
 │       └── deploy.yml          # CI/CD automático
