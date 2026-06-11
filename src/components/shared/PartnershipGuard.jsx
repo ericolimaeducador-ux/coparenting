@@ -30,7 +30,7 @@ export default function PartnershipGuard({ children }) {
             Parceria não encontrada
           </h3>
           <p className="text-sm text-yellow-700 mb-4">
-            Você precisa de uma parceria ativa para acessar esta área. Convide o co-responsável pelos seus filhos.
+            Você precisa de uma parceria ativa no 2for1 para acessar esta área. Convide o co-responsável e sincronize a rotina familiar.
           </p>
           <Link
             to="/settings"

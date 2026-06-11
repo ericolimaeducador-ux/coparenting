@@ -94,7 +94,7 @@ export default function Layout({ children }) {
       <div className="flex flex-col flex-1 overflow-hidden">
         {/* Mobile header */}
         <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-slate-100 shadow-sm">
-          <AppLogo markClassName="h-8 w-11" wordmarkClassName="text-sm tracking-[0.06em]" />
+          <AppLogo compact markClassName="h-8 w-8" wordmarkClassName="text-sm tracking-[0.06em]" />
           <Button
             variant="ghost"
             size="icon"

@@ -1,6 +1,6 @@
-# 2for1 — Plataforma de Coparentalidade
+# 2for1 — Plataforma para coparentalidade
 
-Uma aplicação web completa para pais separados que compartilham a criação dos filhos.  
+Uma aplicação web para pais separados que precisam organizar a criação dos filhos com clareza, privacidade e menos conflito.  
 **Stack:** React 18 + Vite + Tailwind CSS + Supabase + GitHub Pages
 
 ---
@@ -8,13 +8,13 @@ Uma aplicação web completa para pais separados que compartilham a criação do
 ## 🚀 Funcionalidades
 
 - **🏠 Dashboard** — Visão geral com filhos, eventos próximos e movimentações
-- **📅 Calendário** — Eventos compartilhados com visualização mensal
+- **📅 Calendário** — Agenda compartilhada com visualização mensal
 - **💰 Finanças** — Controle de despesas e receitas com gráficos
-- **💬 Chat** — Comunicação direta em tempo real entre os responsáveis
-- **🎁 Presentes** — Kanban de sugestões de presentes por status
+- **💬 Chat** — Comunicação direta e privada entre os responsáveis
+- **🎁 Presentes** — Sugestões e aprovações organizadas por status
 - **💉 Vacinação** — Caderneta vacinal completa com calendário SBP
 - **👶 Perfil da Criança** — Dados completos: saúde, escola, documentos
-- **⚙️ Configurações** — Gestão de parceria com link de convite
+- **⚙️ Configurações** — Gestão da parceria com link de convite
 
 ---
 
@@ -24,7 +24,7 @@ Uma aplicação web completa para pais separados que compartilham a criação do
 
 1. Acesse [supabase.com](https://supabase.com) e crie uma conta gratuita
 2. Clique em **"New Project"**
-3. Escolha um nome (ex: `coparent`), senha do banco e região (South America - São Paulo)
+3. Escolha um nome (ex: `2for1`), senha do banco e região (South America - São Paulo)
 4. Aguarde o projeto ser criado (~2 min)
 
 ### 2. Executar o schema do banco de dados
@@ -100,8 +100,8 @@ git push origin main
 
 ```bash
 # Clone o repositório
-git clone https://github.com/seu-usuario/coparent.git
-cd coparent
+git clone https://github.com/seu-usuario/2for1.git
+cd 2for1
 
 # Instale dependências
 npm install
@@ -194,7 +194,7 @@ Acesse [http://localhost:5173](http://localhost:5173)
 - **Row Level Security (RLS)** ativado em todas as tabelas
 - Cada usuário acessa apenas dados da sua parceria
 - A parceria vincula exatamente 2 responsáveis
-- Convites sao gerados no banco, salvos como hash e expiram em 7 dias
+- Convites são gerados no banco, salvos como hash e expiram em 7 dias
 - Autenticação gerenciada pelo Supabase Auth
 - Storage privado com URLs assinadas e policies por pasta de usuario/parceria
 

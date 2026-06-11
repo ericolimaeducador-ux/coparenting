@@ -174,8 +174,8 @@ export default function Settings() {
       {/* Partnership */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base"><Users className="h-4 w-4" /> Parceria Coparental</CardTitle>
-          <CardDescription>Vincule-se ao outro responsável para compartilhar informações.</CardDescription>
+          <CardTitle className="flex items-center gap-2 text-base"><Users className="h-4 w-4" /> Parceria 2for1</CardTitle>
+          <CardDescription>Vincule-se ao outro responsável para compartilhar informações com privacidade.</CardDescription>
         </CardHeader>
         <CardContent>
           {acceptingInvite && (
@@ -194,7 +194,7 @@ export default function Settings() {
           {!partnership ? (
             <div className="space-y-4">
               <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 text-sm text-muted-foreground">
-                <p>💡 Crie uma parceria e compartilhe o link com o co-responsável pelos seus filhos. Após aceitar, vocês terão acesso compartilhado a todas as informações.</p>
+                <p>💡 Crie uma parceria 2for1 e compartilhe o link com o co-responsável. Após aceitar, vocês terão acesso compartilhado às informações dos filhos.</p>
               </div>
               <form onSubmit={handleInvite} className="space-y-3">
                 <div className="space-y-1.5">
@@ -208,13 +208,13 @@ export default function Settings() {
                 </div>
                 <Button type="submit" className="gap-2" disabled={inviting}>
                   <Send className="h-4 w-4" />
-                  {inviting ? 'Criando...' : 'Gerar link de convite'}
+                  {inviting ? 'Criando...' : 'Gerar link seguro'}
                 </Button>
               </form>
 
               {inviteLink && (
                 <div className="rounded-xl border border-primary-100 bg-primary-50 p-4 space-y-3">
-                  <p className="text-sm font-medium text-primary-900">Link de convite gerado!</p>
+                  <p className="text-sm font-medium text-primary-900">Link seguro gerado!</p>
                   <p className="text-xs text-primary-700">Compartilhe este link com o co-responsável:</p>
                   <div className="flex gap-2">
                     <Input value={inviteLink} readOnly className="text-xs" />

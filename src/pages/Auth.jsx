@@ -154,10 +154,10 @@ export default function AuthPage() {
         </div>
         <div className="relative z-10 space-y-6">
           <h1 className="font-display text-4xl font-bold leading-tight">
-            Juntos pelos filhos,<br />mesmo separados.
+            2for1 ajuda a<br />organizar a rotina familiar.
           </h1>
           <p className="text-primary-100 text-lg leading-relaxed max-w-sm">
-            Cadastre-se, convide o outro responsavel e comece a compartilhar tudo em um ambiente privado.
+            Cadastre-se, convide o outro responsavel e centralize agenda, chat, gastos e saude em um ambiente privado.
           </p>
           <div className="grid grid-cols-2 gap-3">
             {[
@@ -172,8 +172,8 @@ export default function AuthPage() {
             ))}
           </div>
         </div>
-        <p className="relative z-10 text-primary-200 text-sm">
-          © {new Date().getFullYear()} 2for1 · Privado e seguro
+          <p className="relative z-10 text-primary-200 text-sm">
+          © {new Date().getFullYear()} 2for1 · Privado, claro e focado na rotina familiar
         </p>
       </div>
 

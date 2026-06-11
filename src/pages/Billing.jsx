@@ -148,7 +148,7 @@ export default function Billing() {
                   Limites do beta cortesia
                 </CardTitle>
                 <CardDescription>
-                  Para controlar custos no Supabase, o beta permite ate 2 filhos e somente foto dos filhos em thumbnail.
+                  Para controlar custos no Supabase, o beta 2for1 limita a 2 filhos e usa apenas thumbnails das fotos.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
