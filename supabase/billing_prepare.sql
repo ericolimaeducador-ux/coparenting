@@ -37,28 +37,9 @@ CREATE POLICY "partnership_billing_select" ON partnership_billing FOR SELECT USI
   )
 );
 
-CREATE POLICY "partnership_billing_insert" ON partnership_billing FOR INSERT WITH CHECK (
-  monthly_total_cents = 3000
-  AND payer_amount_cents = 1500
-  AND EXISTS (
-    SELECT 1 FROM partnerships
-    WHERE partnerships.id = partnership_billing.partnership_id
-      AND (partnerships.parent_1_id = auth.uid() OR partnerships.parent_2_id = auth.uid())
-  )
-);
-
--- Real payment status updates should be made by a Supabase Edge Function
+-- No client INSERT/UPDATE policy on billing.
+-- Real payment status updates must be made by a Supabase Edge Function
 -- using the service role after payment-provider webhooks.
-CREATE POLICY "partnership_billing_update" ON partnership_billing FOR UPDATE USING (
-  EXISTS (
-    SELECT 1 FROM partnerships
-    WHERE partnerships.id = partnership_billing.partnership_id
-      AND (partnerships.parent_1_id = auth.uid() OR partnerships.parent_2_id = auth.uid())
-  )
-) WITH CHECK (
-  monthly_total_cents = 3000
-  AND payer_amount_cents = 1500
-);
 
 INSERT INTO partnership_billing (partnership_id)
 SELECT id FROM partnerships

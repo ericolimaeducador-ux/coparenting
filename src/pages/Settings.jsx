@@ -9,7 +9,6 @@ import { Input } from '@/components/ui/input'
 import { Label, Spinner, Badge } from '@/components/ui/misc'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
-import { generateToken } from '@/lib/utils'
 import { toast } from 'sonner'
 
 export default function Settings() {
@@ -84,17 +83,15 @@ export default function Settings() {
     if (!inviteEmail.trim()) return
     setInviting(true)
     try {
-      const token = generateToken()
-      const link = `${window.location.origin}${window.location.pathname}#/auth?invite=${token}`
-      const { error } = await supabase.from('partnerships').insert({
-        parent_1_id: userId,
-        parent_1_email: userEmail,
-        parent_1_name: userDisplayName,
-        parent_2_email: inviteEmail.trim().toLowerCase(),
-        invite_token: token,
-        status: 'pending',
+      const { data, error } = await supabase.rpc('create_partnership_invite', {
+        p_parent_email: userEmail,
+        p_parent_name: userDisplayName,
+        p_partner_email: inviteEmail.trim().toLowerCase(),
       })
       if (error) throw error
+      const token = Array.isArray(data) ? data[0]?.invite_token : data?.invite_token
+      if (!token) throw new Error('invite_token_missing')
+      const link = `${window.location.origin}${window.location.pathname}#/auth?invite=${token}`
       setInviteLink(link)
       toast.success('Parceria criada! Compartilhe o link com o co-responsável.')
       qc.invalidateQueries({ queryKey: ['partnership'] })

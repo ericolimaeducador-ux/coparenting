@@ -7,13 +7,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/misc'
 import AppLogo from '@/components/shared/AppLogo'
-import { generateToken } from '@/lib/utils'
+import { safeInternalRedirect } from '@/lib/utils'
 import { toast } from 'sonner'
 
 export default function AuthPage() {
   const [searchParams] = useSearchParams()
   const inviteToken = searchParams.get('invite') || ''
-  const redirect = searchParams.get('redirect') || '/home'
+  const redirect = safeInternalRedirect(searchParams.get('redirect'))
   const isInviteFlow = !!inviteToken
   const requestedMode = searchParams.get('mode')
 
@@ -35,18 +35,14 @@ export default function AuthPage() {
     if (error) throw error
   }
 
-  const createPendingPartnership = async ({ userId, email, fullName, partnerEmail }) => {
-    const token = generateToken()
-    const { error } = await supabase.from('partnerships').insert({
-      parent_1_id: userId,
-      parent_1_email: email.trim().toLowerCase(),
-      parent_1_name: fullName,
-      parent_2_email: partnerEmail.trim().toLowerCase(),
-      invite_token: token,
-      status: 'pending',
+  const createPendingPartnership = async ({ email, fullName, partnerEmail }) => {
+    const { data, error } = await supabase.rpc('create_partnership_invite', {
+      p_parent_email: email.trim().toLowerCase(),
+      p_parent_name: fullName,
+      p_partner_email: partnerEmail.trim().toLowerCase(),
     })
     if (error) throw error
-    return token
+    return Array.isArray(data) ? data[0]?.invite_token : data?.invite_token
   }
 
   const handleSubmit = async (e) => {
@@ -96,13 +92,12 @@ export default function AuthPage() {
 
         if (data?.user?.id) {
           const token = await createPendingPartnership({
-            userId: data.user.id,
             email: form.email,
             fullName: form.fullName,
             partnerEmail: form.partnerEmail,
           })
           toast.success('Conta criada. Convite de parceria gerado.')
-          navigate(`/settings?createdInvite=${encodeURIComponent(token)}`)
+          navigate(token ? `/settings?createdInvite=${encodeURIComponent(token)}` : '/settings')
           return
         }
 

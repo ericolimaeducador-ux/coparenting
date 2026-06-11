@@ -6,6 +6,7 @@
 
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- ============================================================
 -- PARTNERSHIPS
@@ -19,6 +20,9 @@ CREATE TABLE IF NOT EXISTS partnerships (
   parent_2_email TEXT,
   parent_2_name TEXT,
   invite_token TEXT UNIQUE,
+  invite_token_hash TEXT UNIQUE,
+  invite_expires_at TIMESTAMPTZ,
+  invite_accepted_at TIMESTAMPTZ,
   status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'active')),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -254,12 +258,7 @@ ALTER TABLE child_vaccinations ENABLE ROW LEVEL SECURITY;
 
 -- PARTNERSHIPS: users can see/manage their own partnerships
 CREATE POLICY "partnerships_select" ON partnerships FOR SELECT USING (parent_1_id = auth.uid() OR parent_2_id = auth.uid());
-CREATE POLICY "partnerships_insert" ON partnerships FOR INSERT WITH CHECK (
-  parent_1_id = auth.uid()
-  AND parent_2_id IS NULL
-  AND status = 'pending'
-  AND invite_token IS NOT NULL
-);
+CREATE POLICY "partnerships_insert" ON partnerships FOR INSERT WITH CHECK (FALSE);
 CREATE POLICY "partnerships_delete" ON partnerships FOR DELETE USING (parent_1_id = auth.uid() OR parent_2_id = auth.uid());
 
 CREATE POLICY "partnership_billing_select" ON partnership_billing FOR SELECT USING (
@@ -304,6 +303,75 @@ $$;
 REVOKE ALL ON FUNCTION get_partnership_storage_usage(UUID) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION get_partnership_storage_usage(UUID) TO authenticated;
 
+CREATE OR REPLACE FUNCTION create_partnership_invite(
+  p_parent_email TEXT,
+  p_parent_name TEXT,
+  p_partner_email TEXT
+)
+RETURNS TABLE(partnership_id UUID, invite_token TEXT)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_token TEXT;
+  v_token_hash TEXT;
+  v_partnership_id UUID;
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'not_authenticated';
+  END IF;
+
+  IF p_partner_email IS NULL OR length(trim(p_partner_email)) < 3 THEN
+    RAISE EXCEPTION 'partner_email_required';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM partnerships
+    WHERE status = 'active'
+      AND (parent_1_id = auth.uid() OR parent_2_id = auth.uid())
+  ) THEN
+    RAISE EXCEPTION 'active_partnership_exists';
+  END IF;
+
+  v_token := replace(replace(replace(encode(gen_random_bytes(32), 'base64'), '+', '-'), '/', '_'), '=', '');
+  v_token_hash := encode(digest(v_token, 'sha256'), 'hex');
+
+  DELETE FROM partnerships
+  WHERE status = 'pending'
+    AND parent_1_id = auth.uid();
+
+  INSERT INTO partnerships (
+    parent_1_id,
+    parent_1_email,
+    parent_1_name,
+    parent_2_email,
+    invite_token,
+    invite_token_hash,
+    invite_expires_at,
+    status
+  )
+  VALUES (
+    auth.uid(),
+    lower(coalesce(nullif(trim(p_parent_email), ''), auth.jwt()->>'email')),
+    nullif(trim(p_parent_name), ''),
+    lower(trim(p_partner_email)),
+    NULL,
+    v_token_hash,
+    now() + interval '7 days',
+    'pending'
+  )
+  RETURNING id INTO v_partnership_id;
+
+  partnership_id := v_partnership_id;
+  invite_token := v_token;
+  RETURN NEXT;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION create_partnership_invite(TEXT, TEXT, TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION create_partnership_invite(TEXT, TEXT, TEXT) TO authenticated;
+
 -- Accepting an invite needs to update a row before the invited user is parent_2.
 -- Keep that flow in a SECURITY DEFINER function instead of exposing invite tokens
 -- or allowing broad UPDATEs through RLS.
@@ -331,10 +399,16 @@ BEGIN
     parent_2_name = p_parent_name,
     status = 'active',
     invite_token = NULL,
+    invite_token_hash = NULL,
+    invite_accepted_at = NOW(),
     updated_at = NOW()
-  WHERE invite_token = p_invite_token
+  WHERE (
+      invite_token_hash = encode(digest(p_invite_token, 'sha256'), 'hex')
+      OR invite_token = p_invite_token
+    )
     AND status = 'pending'
     AND parent_2_id IS NULL
+    AND (invite_expires_at IS NULL OR invite_expires_at > NOW())
     AND (parent_2_email IS NULL OR LOWER(parent_2_email) = LOWER(p_parent_email))
     AND parent_1_id <> auth.uid()
   RETURNING * INTO v_partnership;
@@ -512,9 +586,9 @@ ON CONFLICT (vaccine_key) DO NOTHING;
 -- ============================================================
 -- Execute no Dashboard > Storage > New Bucket
 -- Nome: uploads
--- Public: true (para acesso público às fotos e documentos)
+-- Public: false (arquivos privados acessados por signed URLs)
 -- Ou execute:
--- INSERT INTO storage.buckets (id, name, public) VALUES ('uploads', 'uploads', true) ON CONFLICT DO NOTHING;
+-- INSERT INTO storage.buckets (id, name, public) VALUES ('uploads', 'uploads', false) ON CONFLICT DO NOTHING;
 
 -- Security hardening: prefer a private bucket with authenticated owner-folder access.
 INSERT INTO storage.buckets (id, name, public)

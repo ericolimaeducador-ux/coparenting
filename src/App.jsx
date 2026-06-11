@@ -4,6 +4,7 @@ import { Toaster } from 'sonner'
 import { AuthProvider, useAuth } from '@/context/AuthContext'
 import Layout from '@/components/layout/Layout'
 import { Spinner } from '@/components/ui/misc'
+import { safeInternalRedirect } from '@/lib/utils'
 
 // Pages
 import BetaWelcome from '@/pages/BetaWelcome'
@@ -54,7 +55,7 @@ function AuthRedirect() {
   const [searchParams] = useSearchParams()
   const invite = searchParams.get('invite')
   if (invite) return <Navigate to={`/settings?invite=${encodeURIComponent(invite)}`} replace />
-  const redirect = searchParams.get('redirect') || '/home'
+  const redirect = safeInternalRedirect(searchParams.get('redirect'))
   return <Navigate to={redirect} replace />
 }
 

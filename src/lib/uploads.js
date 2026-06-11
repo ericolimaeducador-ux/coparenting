@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { safeHttpUrl } from '@/lib/utils'
 
 const STORAGE_REF_PREFIX = 'storage:'
 const MAX_IMAGE_SIZE = 2 * 1024 * 1024
@@ -80,7 +81,7 @@ export function storagePathFromReference(value) {
 }
 
 export function useStorageUrl(value, expiresIn = 3600) {
-  const [url, setUrl] = useState(isStorageReference(value) ? '' : value || '')
+  const [url, setUrl] = useState(isStorageReference(value) ? '' : safeHttpUrl(value))
 
   useEffect(() => {
     let cancelled = false
@@ -93,7 +94,7 @@ export function useStorageUrl(value, expiresIn = 3600) {
 
       const path = storagePathFromReference(value)
       if (!path) {
-        setUrl(value)
+        setUrl(safeHttpUrl(value))
         return
       }
 

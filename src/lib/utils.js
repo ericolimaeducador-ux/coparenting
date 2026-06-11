@@ -56,11 +56,48 @@ export function formatCurrency(value) {
 
 export function generateToken(length = 32) {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+  const cryptoObj = globalThis.crypto
+  if (cryptoObj?.getRandomValues) {
+    const values = new Uint32Array(length)
+    cryptoObj.getRandomValues(values)
+    return Array.from(values, (v) => chars[v % chars.length]).join('')
+  }
+
   let result = ''
   for (let i = 0; i < length; i++) {
     result += chars.charAt(Math.floor(Math.random() * chars.length))
   }
   return result
+}
+
+export function safeInternalRedirect(value, fallback = '/home') {
+  if (!value || typeof value !== 'string') return fallback
+  if (!value.startsWith('/') || value.startsWith('//')) return fallback
+  if (value.includes('\\') || value.includes('\n') || value.includes('\r')) return fallback
+
+  const [path] = value.split(/[?#]/)
+  const allowed = new Set([
+    '/home',
+    '/calendar',
+    '/finances',
+    '/chat',
+    '/gifts',
+    '/billing',
+    '/settings',
+    '/child-profile',
+    '/vaccination',
+  ])
+  return allowed.has(path) ? value : fallback
+}
+
+export function safeHttpUrl(value) {
+  if (!value || typeof value !== 'string') return ''
+  try {
+    const url = new URL(value)
+    return ['https:', 'http:'].includes(url.protocol) ? url.toString() : ''
+  } catch {
+    return ''
+  }
 }
 
 export function getInitials(name) {

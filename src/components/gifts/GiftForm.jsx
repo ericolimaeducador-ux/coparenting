@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea, Label } from '@/components/ui/misc'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { SecureImage } from '@/components/shared/SecureFile'
+import { safeHttpUrl } from '@/lib/utils'
 import { toast } from 'sonner'
 
 const OCCASIONS = [
@@ -35,10 +36,13 @@ export default function GiftForm({ open, onClose, onSaved, gift, childrenList = 
     e.preventDefault()
     if (!form.child_id) { toast.error('Selecione a crianca'); return }
     if (!form.title.trim()) { toast.error('Nome é obrigatório'); return }
+    const safeLink = form.link ? safeHttpUrl(form.link) : ''
+    if (form.link && !safeLink) { toast.error('Informe um link http ou https valido.'); return }
     setLoading(true)
     try {
       const payload = {
         ...form,
+        link: safeLink || null,
         price_estimate: form.price_estimate ? parseFloat(form.price_estimate) : null,
         child_id: form.child_id,
         suggested_by: suggestedBy,

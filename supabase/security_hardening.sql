@@ -2,6 +2,8 @@
 -- It hardens partnership creation, isolates chat messages by partnership,
 -- and moves the uploads bucket to private access with owner-folder policies.
 
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 ALTER TABLE partnerships ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE partnerships
@@ -9,6 +11,11 @@ ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
 
 ALTER TABLE partnerships
 ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+
+ALTER TABLE partnerships
+ADD COLUMN IF NOT EXISTS invite_token_hash TEXT UNIQUE,
+ADD COLUMN IF NOT EXISTS invite_expires_at TIMESTAMPTZ,
+ADD COLUMN IF NOT EXISTS invite_accepted_at TIMESTAMPTZ;
 
 ALTER TABLE children
 ADD COLUMN IF NOT EXISTS photo_url TEXT,
@@ -166,12 +173,7 @@ REVOKE ALL ON FUNCTION get_partnership_storage_usage(UUID) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION get_partnership_storage_usage(UUID) TO authenticated;
 
 DROP POLICY IF EXISTS "partnerships_insert" ON partnerships;
-CREATE POLICY "partnerships_insert" ON partnerships FOR INSERT WITH CHECK (
-  parent_1_id = auth.uid()
-  AND parent_2_id IS NULL
-  AND status = 'pending'
-  AND invite_token IS NOT NULL
-);
+CREATE POLICY "partnerships_insert" ON partnerships FOR INSERT WITH CHECK (FALSE);
 
 CREATE UNIQUE INDEX IF NOT EXISTS one_active_partnership_parent_1
   ON partnerships (parent_1_id)
@@ -180,6 +182,75 @@ CREATE UNIQUE INDEX IF NOT EXISTS one_active_partnership_parent_1
 CREATE UNIQUE INDEX IF NOT EXISTS one_active_partnership_parent_2
   ON partnerships (parent_2_id)
   WHERE status = 'active' AND parent_2_id IS NOT NULL;
+
+CREATE OR REPLACE FUNCTION create_partnership_invite(
+  p_parent_email TEXT,
+  p_parent_name TEXT,
+  p_partner_email TEXT
+)
+RETURNS TABLE(partnership_id UUID, invite_token TEXT)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_token TEXT;
+  v_token_hash TEXT;
+  v_partnership_id UUID;
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'not_authenticated';
+  END IF;
+
+  IF p_partner_email IS NULL OR length(trim(p_partner_email)) < 3 THEN
+    RAISE EXCEPTION 'partner_email_required';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM partnerships
+    WHERE status = 'active'
+      AND (parent_1_id = auth.uid() OR parent_2_id = auth.uid())
+  ) THEN
+    RAISE EXCEPTION 'active_partnership_exists';
+  END IF;
+
+  v_token := replace(replace(replace(encode(gen_random_bytes(32), 'base64'), '+', '-'), '/', '_'), '=', '');
+  v_token_hash := encode(digest(v_token, 'sha256'), 'hex');
+
+  DELETE FROM partnerships
+  WHERE status = 'pending'
+    AND parent_1_id = auth.uid();
+
+  INSERT INTO partnerships (
+    parent_1_id,
+    parent_1_email,
+    parent_1_name,
+    parent_2_email,
+    invite_token,
+    invite_token_hash,
+    invite_expires_at,
+    status
+  )
+  VALUES (
+    auth.uid(),
+    lower(coalesce(nullif(trim(p_parent_email), ''), auth.jwt()->>'email')),
+    nullif(trim(p_parent_name), ''),
+    lower(trim(p_partner_email)),
+    NULL,
+    v_token_hash,
+    now() + interval '7 days',
+    'pending'
+  )
+  RETURNING id INTO v_partnership_id;
+
+  partnership_id := v_partnership_id;
+  invite_token := v_token;
+  RETURN NEXT;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION create_partnership_invite(TEXT, TEXT, TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION create_partnership_invite(TEXT, TEXT, TEXT) TO authenticated;
 
 CREATE OR REPLACE FUNCTION accept_partnership_invite(
   p_invite_token TEXT,
@@ -205,10 +276,16 @@ BEGIN
     parent_2_name = p_parent_name,
     status = 'active',
     invite_token = NULL,
+    invite_token_hash = NULL,
+    invite_accepted_at = NOW(),
     updated_at = NOW()
-  WHERE invite_token = p_invite_token
+  WHERE (
+      invite_token_hash = encode(digest(p_invite_token, 'sha256'), 'hex')
+      OR invite_token = p_invite_token
+    )
     AND status = 'pending'
     AND parent_2_id IS NULL
+    AND (invite_expires_at IS NULL OR invite_expires_at > NOW())
     AND (parent_2_email IS NULL OR LOWER(parent_2_email) = LOWER(p_parent_email))
     AND parent_1_id <> auth.uid()
   RETURNING * INTO v_partnership;

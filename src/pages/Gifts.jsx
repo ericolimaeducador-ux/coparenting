@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge, Spinner } from '@/components/ui/misc'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { SecureImage } from '@/components/shared/SecureFile'
-import { formatCurrency } from '@/lib/utils'
+import { formatCurrency, safeHttpUrl } from '@/lib/utils'
 import GiftForm from '@/components/gifts/GiftForm'
 import { toast } from 'sonner'
 
@@ -30,6 +30,7 @@ const COLUMNS = [
 
 function GiftCard({ gift, onEdit, onDelete, onApprove, onMarkPurchased }) {
   const occasion = OCCASIONS[gift.occasion] || OCCASIONS.other
+  const safeGiftLink = safeHttpUrl(gift.link)
   return (
     <div className="rounded-xl border border-slate-100 bg-white p-4 hover:shadow-sm transition-shadow">
       {gift.image_url && (
@@ -64,8 +65,8 @@ function GiftCard({ gift, onEdit, onDelete, onApprove, onMarkPurchased }) {
             <Check className="h-3.5 w-3.5" /> Comprado
           </Button>
         )}
-        {gift.link && (
-          <a href={gift.link} target="_blank" rel="noopener noreferrer">
+        {safeGiftLink && (
+          <a href={safeGiftLink} target="_blank" rel="noopener noreferrer">
             <Button size="icon-sm" variant="ghost"><ExternalLink className="h-3.5 w-3.5" /></Button>
           </a>
         )}

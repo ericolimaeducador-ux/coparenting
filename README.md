@@ -38,8 +38,9 @@ Uma aplicação web completa para pais separados que compartilham a criação do
 
 1. No Supabase, acesse **Storage > New Bucket**
 2. Nome: `uploads`
-3. Marque **Public bucket**
+3. Mantenha **Public bucket** desmarcado
 4. Clique em **Create bucket**
+5. Execute o `supabase/schema.sql` completo para criar as policies de acesso privado por usuario/parceria
 
 ### 4. Configurar autenticação
 
@@ -193,9 +194,9 @@ coparenting/
 - **Row Level Security (RLS)** ativado em todas as tabelas
 - Cada usuário acessa apenas dados da sua parceria
 - A parceria vincula exatamente 2 responsáveis
-- Token de convite único e de uso único
+- Convites sao gerados no banco, salvos como hash e expiram em 7 dias
 - Autenticação gerenciada pelo Supabase Auth
-- Storage de arquivos com acesso público mas upload autenticado
+- Storage privado com URLs assinadas e policies por pasta de usuario/parceria
 
 ---
 
